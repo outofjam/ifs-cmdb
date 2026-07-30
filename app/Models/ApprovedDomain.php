@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @mixin Builder
  */
-#[Fillable(['domain'])]
+#[Fillable(['organization_id', 'domain'])]
 class ApprovedDomain extends Model
 {
     /** @use HasFactory<ApprovedDomainFactory> */
