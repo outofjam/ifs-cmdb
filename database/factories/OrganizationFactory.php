@@ -19,6 +19,7 @@ class OrganizationFactory extends Factory
     {
         return [
             'name' => fake()->company(),
+            'email_domain' => fake()->unique()->domainName(),
         ];
     }
 }
