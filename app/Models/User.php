@@ -60,8 +60,12 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        // Single-tenant MVP: every user belongs to the one seeded organization,
-        // so authentication alone is sufficient. Revisit if a second org ships.
+        if ($panel->getId() === 'platform') {
+            return $this->is_platform_owner;
+        }
+
+        // Every user belongs to an organization, so authentication alone is
+        // sufficient for the org-scoped admin panel.
         return true;
     }
 }
