@@ -236,12 +236,14 @@ See docs/plan.md for complete spec.
 - Foundation phase complete (docs/plans/01-foundation.md): organizations/users schema
   with UUID PKs, `OrganizationRole` enum, global `OrganizationScope` + cross-org
   isolation tests, Microsoft Entra ID login via Socialite wired into the Filament
-  admin panel (password login removed)
+  admin panel
 - Customer Management complete (docs/plans/02-customer-management.md): Customer
   model + Filament resource, org-scoped, owner assignment
-- Organization onboarding complete (docs/plans/03-org-self-service-onboarding.md):
-  domain-allowlist gated org attachment on Entra login — see "Organization
-  Onboarding" above
+- Organization onboarding + platform admin complete (docs/plans/03 and 04): open
+  self-serve signup (password-based, no gate — pre-revenue stage), per-org Entra
+  app config with two-step Microsoft login (org's own app if configured, else the
+  shared platform app), `/platform` panel for the platform owner — see
+  "Organization Onboarding" above
 - Next: Environment Registry (docs/plan.md §17.4)
 
 ## TDD — Non-Negotiable Workflow
