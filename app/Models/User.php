@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\OrganizationRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -19,7 +20,7 @@ use Illuminate\Notifications\Notifiable;
  *
  * @mixin Builder
  */
-#[Fillable(['name', 'email', 'password', 'organization_id'])]
+#[Fillable(['name', 'email', 'password', 'organization_id', 'role'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -44,6 +45,12 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role' => OrganizationRole::class,
         ];
+    }
+
+    public function isPlatformAdministrator(): bool
+    {
+        return $this->role === OrganizationRole::PlatformAdministrator;
     }
 }
