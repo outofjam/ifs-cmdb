@@ -1,0 +1,54 @@
+<?php
+
+use App\Filament\Resources\Customers\Pages\CreateCustomer;
+use App\Filament\Resources\Customers\Pages\ListCustomers;
+use App\Models\Customer;
+use App\Models\Organization;
+use App\Models\User;
+use Livewire\Livewire;
+
+it('lists customers belonging to the authenticated user\'s organization', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    $customer = Customer::factory()->for($organization)->create(['name' => 'Acme HVAC']);
+
+    Livewire::test(ListCustomers::class)
+        ->assertCanSeeTableRecords([$customer])
+        ->assertSee('Acme HVAC');
+});
+
+it('does not list another organization\'s customers', function () {
+    $orgA = Organization::factory()->create();
+    $orgB = Organization::factory()->create();
+    $user = User::factory()->for($orgA)->create();
+    $this->actingAs($user);
+
+    $otherCustomer = Customer::factory()->for($orgB)->create();
+
+    Livewire::test(ListCustomers::class)
+        ->assertCanNotSeeTableRecords([$otherCustomer]);
+});
+
+it('creates a customer with an owner and notes through the form', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+    $owner = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    Livewire::test(CreateCustomer::class)
+        ->fillForm([
+            'name' => 'Brinks',
+            'owner_id' => $owner->id,
+            'notes' => 'Referred by Acme.',
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $customer = Customer::query()->where('name', 'Brinks')->sole();
+
+    expect($customer->organization_id)->toBe($organization->id)
+        ->and($customer->owner_id)->toBe($owner->id)
+        ->and($customer->notes)->toBe('Referred by Acme.');
+});
