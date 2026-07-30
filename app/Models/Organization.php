@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * @mixin Builder
  */
-#[Fillable(['name', 'email_domain'])]
+#[Fillable(['name'])]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
