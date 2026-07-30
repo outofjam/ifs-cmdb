@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * @mixin Builder
  */
-#[Fillable(['name'])]
+#[Fillable(['name', 'azure_client_id', 'azure_client_secret', 'azure_tenant_id'])]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
@@ -28,5 +28,15 @@ class Organization extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'azure_client_secret' => 'encrypted',
+        ];
     }
 }
