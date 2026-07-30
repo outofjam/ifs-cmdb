@@ -15,7 +15,7 @@ it('shows both a Microsoft sign-in link and a password login form', function () 
     $response = $this->get('/admin/login');
 
     $response->assertOk();
-    $response->assertSee(route('auth.microsoft.redirect'), false);
+    $response->assertSee(route('auth.microsoft.start'), false);
     $response->assertSee('wire:model="data.password"', false);
 });
 

@@ -7,6 +7,12 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/auth/microsoft/start', [MicrosoftAuthController::class, 'start'])
+    ->name('auth.microsoft.start');
+
+Route::post('/auth/microsoft/start', [MicrosoftAuthController::class, 'resolve'])
+    ->name('auth.microsoft.resolve');
+
 Route::get('/auth/microsoft/redirect', [MicrosoftAuthController::class, 'redirect'])
     ->name('auth.microsoft.redirect');
 

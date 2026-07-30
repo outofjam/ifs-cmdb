@@ -20,7 +20,7 @@ class MicrosoftLogin extends BaseLogin
             Actions::make([
                 Action::make('microsoft')
                     ->label('Sign in with Microsoft')
-                    ->url(route('auth.microsoft.redirect'))
+                    ->url(route('auth.microsoft.start'))
                     ->button()
                     ->outlined()
                     ->extraAttributes(['class' => 'w-full']),
