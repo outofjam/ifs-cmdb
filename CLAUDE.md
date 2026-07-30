@@ -195,8 +195,12 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 See docs/plan.md for complete spec.
 
 ## Current status
-- Postgres connected locally via Yerd
-- Users/organizations migration + Pest tests in progress
+- Postgres connected locally via Yerd (dev: `ifs_cmdb`, test: `ifs_cmdb_testing`)
+- Foundation phase complete (docs/plans/01-foundation.md): organizations/users schema
+  with UUID PKs, `OrganizationRole` enum, global `OrganizationScope` + cross-org
+  isolation tests, single seeded MVP organization, Microsoft Entra ID login via
+  Socialite wired into the Filament admin panel (password login removed)
+- Next: Customer Management (docs/plan.md §17.3)
 
 ## TDD — Non-Negotiable Workflow
 
