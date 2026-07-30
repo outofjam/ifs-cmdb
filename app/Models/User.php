@@ -6,6 +6,8 @@ namespace App\Models;
 use App\Enums\OrganizationRole;
 use App\Models\Concerns\BelongsToOrganization;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,7 +25,7 @@ use Illuminate\Notifications\Notifiable;
  */
 #[Fillable(['name', 'email', 'password', 'organization_id', 'role'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use BelongsToOrganization, HasFactory, HasUuids, Notifiable;
@@ -53,5 +55,12 @@ class User extends Authenticatable
     public function isPlatformAdministrator(): bool
     {
         return $this->role === OrganizationRole::PlatformAdministrator;
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Single-tenant MVP: every user belongs to the one seeded organization,
+        // so authentication alone is sufficient. Revisit if a second org ships.
+        return true;
     }
 }
