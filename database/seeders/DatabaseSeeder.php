@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(OrganizationSeeder::class);
+        $this->call(ApprovedDomainSeeder::class);
 
         // User::factory(10)->create();
 

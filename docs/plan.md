@@ -768,42 +768,24 @@ The consulting team can:
 
 ## Known Gap (Phase 2 prerequisite)
 Platform-admin / cross-org visibility is not designed yet. OrganizationScope has
-no "view across orgs" mode by design. Before onboarding a second real organization,
-Phase 2 planning must explicitly design: (1) how a platform-admin role bypasses
-OrganizationScope safely and auditable-y, (2) Entra ID tenant → Organization mapping
-for provisioning (see Task 7's hardcoded firstOrFail()).
+no "view across orgs" mode by design. Before you (the platform owner) need to
+operate across orgs day-to-day, this must be explicitly designed: how a
+platform-owner-level actor bypasses OrganizationScope safely and auditably.
+Note this is a level above any `OrganizationRole` — `OrganizationRole::PlatformAdministrator`
+is an *org's own* admin (per §6 "Organization Role"), not you. Not urgent while
+org onboarding is domain-allowlist gated (below) and you're never in that loop.
 
-### Detail on (2): per-org Entra ID / Microsoft login
+### Resolved: organization onboarding
 
-Today, Microsoft login is wired to exactly one Entra ID app registration via
-`.env` (`AZURE_CLIENT_ID`/`AZURE_CLIENT_SECRET`/`AZURE_TENANT_ID`), for the
-single seeded organization. This is intentional for MVP (§4.1) — do not build
-multi-org SSO speculatively. When a second real org needs to onboard, this
-needs three things, in order, because #2 and #3 need real requirements from
-that org to design correctly (guessing now risks building the wrong shape):
-
-1. **Per-org SSO config storage.** A new tenant-scoped model (or columns on
-   `Organization`) holding `azure_client_id`, `azure_tenant_id`, and a secret
-   *reference* (provider + key name) for the client secret — never the raw
-   secret, per §9.1. Mechanically identical effort to any other new
-   tenant-scoped model (see Customer Management plan for the pattern).
-2. **Org resolution at login, before the user is identified.** Undesigned.
-   Candidates: subdomain per org (`acme.ifs-cmdb.app` — needs wildcard DNS +
-   tenant-resolution middleware used app-wide, not just at login), a
-   pre-login "enter your work email" step that looks up org by email domain,
-   or a per-org login path/slug. Whichever is chosen shapes how tenancy is
-   resolved everywhere, not just auth — pick this based on how the actual
-   second org's users will arrive, not in the abstract.
-3. **Real secret storage for the org's client secret.** §9's Secret Provider
-   Architecture (Key Vault, etc.) isn't implemented in code at all yet —
-   this can't be stubbed for a second org's real OAuth credentials.
-
-What does NOT need to change: the auth flow's shape. `MicrosoftAuthController`
-(redirect/callback) and `ProvisionUserFromEntra` are already small, isolated,
-independently tested units — swapping the static Socialite driver config for
-one built from the resolved org's stored config (`Socialite::buildProvider()`),
-and replacing `ProvisionUserFromEntra`'s `firstOrFail()` with a real lookup,
-is a bounded, mechanical change once 1-3 above are designed. Estimate: a
-couple of hours for the mechanical retrofit, once the org-resolution UX (2)
-and secret storage (3) decisions are made — those two are the real cost, and
-neither is smaller if attempted now.
+Superseding the earlier "per-org Entra app registration" sketch that used to
+live here — implemented instead via a single multi-tenant Entra app
+registration + domain allowlist, see CLAUDE.md "Organization Onboarding" for
+the authoritative description and docs/plans/03-org-self-service-onboarding.md
+for the full design discussion. Summary: one Entra app registration
+(`AZURE_TENANT_ID=organizations`) serves every org; `ApprovedDomain` maps
+`domain -> organization_id`; unrecognized domains (including personal ones)
+are rejected, never auto-provisioned. Deliberate: auto-creating an org for
+any matching work email would mean zero revenue gate and zero ability to say
+no to an org. No self-serve admin UI yet — domains are approved by seeding
+or editing `approved_domains` directly; a future admin UI for this is
+Phase 2+, not designed yet.

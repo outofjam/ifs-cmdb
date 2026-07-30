@@ -191,6 +191,24 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
   (and `$table->foreignUuid(...)` for references to them), models use Laravel's
   `HasUuids` trait. No auto-incrementing bigint IDs on any model.
 
+## Organization Onboarding
+**Deliberate business decision — do not "simplify" this back to open self-serve.**
+Org attachment on Microsoft login is domain-allowlist gated, not open
+auto-provisioning. One multi-tenant Entra app registration (`AZURE_TENANT_ID=organizations`)
+serves every customer org — Microsoft identifies the person, not which org
+they may join. `ProvisionUserFromEntra` looks up the login's email domain in
+`ApprovedDomain` (`domain -> organization_id`, one org per domain):
+- Match → attach to that org (create the user if new, role `Viewer`; reuse if existing).
+- No match → `OrganizationNotApprovedException`, no `Organization` or `User` row is
+  ever created. Personal domains (gmail.com etc.) need no special-casing — they
+  simply never appear in `approved_domains`, so they fall into this same path.
+
+Why: auto-creating a live org for anyone with a matching work email means zero
+revenue gate and zero ability to say no to an org. For MVP there is no admin UI
+for this — domains are approved by seeding (`ApprovedDomainSeeder`, reads
+`SEEDED_ORGANIZATION_DOMAINS`) or editing `approved_domains` directly. See
+docs/plans/03-org-self-service-onboarding.md for the full design discussion.
+
 ## Full product plan
 See docs/plan.md for complete spec.
 
@@ -198,9 +216,14 @@ See docs/plan.md for complete spec.
 - Postgres connected locally via Yerd (dev: `ifs_cmdb`, test: `ifs_cmdb_testing`)
 - Foundation phase complete (docs/plans/01-foundation.md): organizations/users schema
   with UUID PKs, `OrganizationRole` enum, global `OrganizationScope` + cross-org
-  isolation tests, single seeded MVP organization, Microsoft Entra ID login via
-  Socialite wired into the Filament admin panel (password login removed)
-- Next: Customer Management (docs/plan.md §17.3)
+  isolation tests, Microsoft Entra ID login via Socialite wired into the Filament
+  admin panel (password login removed)
+- Customer Management complete (docs/plans/02-customer-management.md): Customer
+  model + Filament resource, org-scoped, owner assignment
+- Organization onboarding complete (docs/plans/03-org-self-service-onboarding.md):
+  domain-allowlist gated org attachment on Entra login — see "Organization
+  Onboarding" above
+- Next: Environment Registry (docs/plan.md §17.4)
 
 ## TDD — Non-Negotiable Workflow
 
