@@ -766,26 +766,25 @@ The consulting team can:
 * Understand their delivery landscape
 
 
-## Known Gap (Phase 2 prerequisite)
-Platform-admin / cross-org visibility is not designed yet. OrganizationScope has
-no "view across orgs" mode by design. Before you (the platform owner) need to
-operate across orgs day-to-day, this must be explicitly designed: how a
-platform-owner-level actor bypasses OrganizationScope safely and auditably.
-Note this is a level above any `OrganizationRole` — `OrganizationRole::PlatformAdministrator`
-is an *org's own* admin (per §6 "Organization Role"), not you. Not urgent while
-org onboarding is domain-allowlist gated (below) and you're never in that loop.
+## Known Gap (Phase 2 prerequisite): revenue gate on org creation
+Org creation is currently fully open (self-serve signup, no approval step) —
+a deliberate choice for the pre-revenue, pre-public-launch stage this product
+is at now. Before selling this or making it public, this needs a gate again:
+either an approval/invite step before a signup becomes a live org, or a
+billing/trial step. Revisit explicitly when that stage arrives — don't let it
+drift by default. See CLAUDE.md "Organization Onboarding".
 
-### Resolved: organization onboarding
+## Resolved: organization onboarding & platform admin
 
-Superseding the earlier "per-org Entra app registration" sketch that used to
-live here — implemented instead via a single multi-tenant Entra app
-registration + domain allowlist, see CLAUDE.md "Organization Onboarding" for
-the authoritative description and docs/plans/03-org-self-service-onboarding.md
-for the full design discussion. Summary: one Entra app registration
-(`AZURE_TENANT_ID=organizations`) serves every org; `ApprovedDomain` maps
-`domain -> organization_id`; unrecognized domains (including personal ones)
-are rejected, never auto-provisioned. Deliberate: auto-creating an org for
-any matching work email would mean zero revenue gate and zero ability to say
-no to an org. No self-serve admin UI yet — domains are approved by seeding
-or editing `approved_domains` directly; a future admin UI for this is
-Phase 2+, not designed yet.
+See CLAUDE.md "Organization Onboarding" for the authoritative current
+description, and docs/plans/03-org-self-service-onboarding.md (domain
+allowlist mechanism) + docs/plans/04-self-serve-signup-and-platform-admin.md
+(signup, per-org Entra config, platform panel) for the full design history.
+
+Summary: new orgs are created via open self-serve signup (plain
+email/password, no Entra), not by an unrecognized domain hitting Entra
+login. Each org can configure its own Entra app registration for its team's
+Microsoft login (falling back to one shared platform app if they haven't).
+You (the platform owner) operate through a separate `/platform` Filament
+panel — a distinct concept from `OrganizationRole::PlatformAdministrator`,
+which is scoped to one org (an org's own admin), not you.

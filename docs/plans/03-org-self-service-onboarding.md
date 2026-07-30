@@ -1,5 +1,16 @@
 # Organization Domain-Gated Onboarding Implementation Plan
 
+> **Superseded in part by docs/plans/04-self-serve-signup-and-platform-admin.md.**
+> Everything built here (`ApprovedDomain`, `ProvisionUserFromEntra`'s domain
+> lookup) is still in use — but it no longer gates *org creation*. New orgs
+> now come from open self-serve signup (pre-revenue stage, no gate needed
+> yet). `ApprovedDomain` continues to map `domain -> organization_id`; it's
+> now populated by signup instead of only by seeding, and is reused to
+> resolve which org's Entra app a team member's Microsoft login should use.
+> The "not approved" rejection path below still fires for a domain with
+> genuinely no org at all — see CLAUDE.md "Organization Onboarding" for the
+> current authoritative picture before reading this plan as current.
+
 **Goal:** Employees at an approved company can sign in with Microsoft and be attached to their org automatically. Employees at a company that hasn't been approved get a clear "not set up yet, contact us" message instead of an account — no org is ever auto-created from an unrecognized domain.
 
 **Why this replaces the earlier open-auto-provisioning design:** auto-creating a live org for anyone with a matching work email means zero revenue gate and zero ability to say no to an org. That's a business decision, made explicitly here, not a technical default — see the CLAUDE.md note this plan adds (Task 5) so it can't get "simplified" back to open auto-provisioning later by mistake.

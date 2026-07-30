@@ -23,7 +23,7 @@ use Illuminate\Notifications\Notifiable;
  *
  * @mixin Builder
  */
-#[Fillable(['name', 'email', 'password', 'organization_id', 'role'])]
+#[Fillable(['name', 'email', 'password', 'organization_id', 'role', 'is_platform_owner'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -49,6 +49,7 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => OrganizationRole::class,
+            'is_platform_owner' => 'boolean',
         ];
     }
 

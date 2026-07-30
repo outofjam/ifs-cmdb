@@ -192,22 +192,41 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
   `HasUuids` trait. No auto-incrementing bigint IDs on any model.
 
 ## Organization Onboarding
-**Deliberate business decision — do not "simplify" this back to open self-serve.**
-Org attachment on Microsoft login is domain-allowlist gated, not open
-auto-provisioning. One multi-tenant Entra app registration (`AZURE_TENANT_ID=organizations`)
-serves every customer org — Microsoft identifies the person, not which org
-they may join. `ProvisionUserFromEntra` looks up the login's email domain in
-`ApprovedDomain` (`domain -> organization_id`, one org per domain):
-- Match → attach to that org (create the user if new, role `Viewer`; reuse if existing).
-- No match → `OrganizationNotApprovedException`, no `Organization` or `User` row is
-  ever created. Personal domains (gmail.com etc.) need no special-casing — they
-  simply never appear in `approved_domains`, so they fall into this same path.
+Two distinct, non-conflicting paths — don't confuse them:
 
-Why: auto-creating a live org for anyone with a matching work email means zero
-revenue gate and zero ability to say no to an org. For MVP there is no admin UI
-for this — domains are approved by seeding (`ApprovedDomainSeeder`, reads
-`SEEDED_ORGANIZATION_DOMAINS`) or editing `approved_domains` directly. See
-docs/plans/03-org-self-service-onboarding.md for the full design discussion.
+**1. New orgs are created via self-serve signup, fully open, no gate (current
+stage — pre-revenue, pre-public launch; revisit when that changes).** Plain
+email/password registration (no Entra involved at signup) creates the
+`Organization`, an `ApprovedDomain` for the signer-upper's email domain, and
+the signing-up user as that org's admin (`OrganizationRole::PlatformAdministrator`).
+See docs/plans/04-self-serve-signup-and-platform-admin.md.
+
+**2. Once inside, the org admin can configure their own Entra app** (`Organization.azure_client_id`/`azure_client_secret`
+[encrypted]/`azure_tenant_id`, entered via a settings page) so their team can
+sign in with Microsoft through their *own* Azure AD app instead of a shared
+one. Team-member Microsoft login is a two-step redirect: enter work email →
+resolve org via `ApprovedDomain` → build the Socialite provider from that
+org's stored config if set, else fall back to the platform's shared app
+(`AZURE_TENANT_ID=organizations` in `.env`) → redirect to Microsoft.
+`ProvisionUserFromEntra` (unchanged) then attaches/creates the user via the
+same `ApprovedDomain` lookup at callback time.
+
+**No unapproved-domain rejection anymore for path 1** — that was a deliberate
+gate for a scenario (selling to strangers) that doesn't apply yet. Path 2's
+`OrganizationNotApprovedException` still fires for a domain with genuinely no
+org at all (nobody has signed up for it) — it's just no longer the mechanism
+that blocks *new org creation*, since that now happens via signup, not login.
+
+**Platform owner** (you — operates across all orgs, distinct from any
+`OrganizationRole`): `User.is_platform_owner`, separate Filament panel
+(`/platform`, plain password login, not Microsoft), lists all organizations.
+Not the same as `OrganizationRole::PlatformAdministrator`, which is scoped to
+one org (an org's own admin).
+
+See docs/plans/03-org-self-service-onboarding.md for the domain-allowlist
+mechanism (`ApprovedDomain`, still used, just no longer gates org creation)
+and docs/plans/04-self-serve-signup-and-platform-admin.md for the full
+current design.
 
 ## Full product plan
 See docs/plan.md for complete spec.
