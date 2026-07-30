@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\MicrosoftLogin;
+use App\Filament\Pages\Auth\OrganizationRegister;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -29,6 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(MicrosoftLogin::class)
+            ->registration(OrganizationRegister::class)
             ->colors([
                 'primary' => Color::Amber,
             ])
