@@ -10,8 +10,10 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
 - php - 8.5
+- filament/filament (FILAMENT) - v5
 - laravel/framework (LARAVEL) - v13
 - laravel/prompts (PROMPTS) - v0
+- livewire/livewire (LIVEWIRE) - v4
 - laravel/boost (BOOST) - v2
 - laravel/mcp (MCP) - v0
 - laravel/pail (PAIL) - v1
@@ -115,7 +117,17 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 ### Model Creation
 
+- all models and all tables should use UUIDs. no autoincremements
 - When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `php artisan make:model --help` to check the available options.
+- and all models should have this block before the class defintion for phpstorm to work properly
+/**
+* @method static Model|static create(array $attributes = [])
+* @method static Builder|static query()
+*
+* @mixin Builder
+*/
+
+
 
 ## APIs & Eloquent Resources
 
@@ -152,3 +164,79 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Do NOT delete tests without approval.
 
 </laravel-boost-guidelines>
+
+# IFS CMDB — Enterprise Implementation Ops Platform
+
+## Stack
+- Laravel 13, PostgreSQL (never MySQL), FilamentPHP
+- Local dev: Yerd (not Herd) — Postgres 17.10, db `ifs_cmdb`, role `ifs_app`
+- Testing: Pest exclusively (not raw PHPUnit), TDD workflow — write failing test first
+- Auth: Microsoft Entra ID via Socialite
+
+## Architecture
+- Multi-tenant schema, single-tenant product for MVP (see docs/plan.md Section 4.1)
+- Every tenant table has `organization_id`, scoped via a global Eloquent scope
+- Production credentials/secrets are NEVER stored — non-prod only (Section 9.1/11)
+- Secrets stored as references only (provider + key name), never values
+- All model primary keys are UUIDs: migrations use `$table->uuid('id')->primary()`
+  (and `$table->foreignUuid(...)` for references to them), models use Laravel's
+  `HasUuids` trait. No auto-incrementing bigint IDs on any model.
+
+## Full product plan
+See docs/plan.md for complete spec.
+
+## Current status
+- Postgres connected locally via Yerd
+- Users/organizations migration + Pest tests in progress
+
+## TDD — Non-Negotiable Workflow
+
+Every feature follows red-green-refactor. No exceptions:
+
+1. Write the failing Pest test first. Run it. Confirm it fails for the expected reason.
+2. Write the minimum code to make it pass. Run it. Confirm it passes.
+3. Refactor if needed, keeping tests green.
+
+Do not write implementation code (migrations, models, policies, controllers) before
+the corresponding test exists and has been run in its failing state. If you're about
+to create a model/migration/class with no test yet, stop and write the test first.
+
+Prefer feature tests for HTTP/Filament-resource behavior; unit tests for scopes,
+policies, and actions. Arch tests (`pestphp/pest-plugin-arch`) enforce the
+non-negotiables in Section 9.1/11 — e.g. no production credential storage,
+no cross-org data access.
+
+## Org-Scoping Tests — Required for Every Tenant Model
+
+Any model carrying `organization_id` must ship with a cross-org isolation test
+before it's considered done, following the existing pattern (see `Environment`
+model tests as the reference example):
+
+- A user in Org A cannot read, update, or delete a record belonging to Org B,
+  even by guessing/passing its ID directly.
+- The global `OrganizationScope` is applied and cannot be bypassed accidentally
+  via `withoutGlobalScope`, raw queries, or eager-loaded relations.
+
+Use Pest datasets to run this same check across all tenant models rather than
+duplicating the test per model — see `arch()` and `it(...)->with([...])` patterns
+already established for this.
+
+No new tenant-scoped model is complete until this test exists and is green.
+
+## Arch Tests — Secret Storage Invariants (Section 9.1/11)
+
+The following must be enforced by `pestphp/pest-plugin-arch`, not just code review:
+
+- No model, migration, or table may contain a column that stores a raw secret
+  value (password, API key, token, etc.). Only `secret_provider` and
+  `secret_reference` (pointer to an external vault) are permitted.
+- No `Credential` (or related) migration may add columns to environments of
+  type `production`. Credential records are non-prod only — enforce at the
+  model/policy layer, not just documentation.
+- No class may expose a method that returns a decrypted/raw secret value
+  (e.g. `getSecretValue()`, `decryptPassword()`). If such a method appears,
+  it's a violation, not a feature.
+
+Add/extend these arch tests whenever a new model touches credentials or
+environments. If you're unsure whether a column violates this, don't add it —
+ask first.
