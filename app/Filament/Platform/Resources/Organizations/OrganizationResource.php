@@ -47,7 +47,8 @@ class OrganizationResource extends Resource
                 //
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->slideOver(),
                 DeleteAction::make(),
             ])
             ->toolbarActions([
