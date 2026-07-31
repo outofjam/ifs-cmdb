@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\EnvironmentType;
+use App\Models\Credential;
 use App\Models\Customer;
 use App\Models\Environment;
 use App\Models\Organization;
@@ -9,6 +11,12 @@ dataset('tenant models', [
     'Customer' => [fn (Organization $organization) => Customer::factory()->for($organization)->create()],
     'Environment' => [fn (Organization $organization) => Environment::factory()->for($organization)->create([
         'customer_id' => Customer::factory()->for($organization)->create()->id,
+    ])],
+    'Credential' => [fn (Organization $organization) => Credential::factory()->for($organization)->create([
+        'environment_id' => Environment::factory()->for($organization)->create([
+            'customer_id' => Customer::factory()->for($organization)->create()->id,
+            'type' => EnvironmentType::Uat,
+        ])->id,
     ])],
 ]);
 
