@@ -873,3 +873,26 @@ anyone in — the tenant-ID check is the real security boundary, not the
 lookup key. You (the platform owner) operate through a separate `/platform`
 Filament panel — a distinct concept from `OrganizationRole::PlatformAdministrator`,
 which is scoped to one org (an org's own admin), not you.
+
+
+## Backlog item — platform-owner credential isolation guarantee
+
+Add an explicit, permanent test proving that a user with
+is_platform_owner=true cannot list, view, retrieve, or reveal Credentials,
+Environments, or Customers belonging to any organization they are not
+personally a member of — via any route (Filament UI, direct model query,
+API if one exists later). Test should log in as a platform owner and
+actively attempt cross-org access to confirm it fails, not just assert
+the absence of a bypass by reading code.
+
+Also confirm as part of this: OrganizationResource on the /platform panel
+exposes only high-level org metadata (name, slug, Entra-config presence,
+user count) and does not eager-load or expose credentials/environments/
+customers as viewable relations.
+
+This is a standing invariant, not a one-time check — treat it with the
+same rigor as the OrganizationScope arch test from the Foundation phase
+(full review, not direct-TDD), and add it to whichever suite already
+covers cross-org isolation so it can't silently regress later.
+
+Not urgent — backlog, pick up after current work (plans 07/08) lands.

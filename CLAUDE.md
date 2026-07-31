@@ -1,11 +1,6 @@
 <laravel-boost-guidelines>
 === foundation rules ===
 
-# General
-- no CLI browser testing
-- all files and methods should be documented inline
-- no emdashes in any text
-
 # Laravel Boost Guidelines
 
 The Laravel Boost guidelines are specifically curated by Laravel maintainers for this application. These guidelines should be followed closely to ensure the best experience when building Laravel applications.
@@ -37,27 +32,6 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
 - Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
 - Check for existing components to reuse before writing a new one.
-
-## Filament Page Design
-
-Pages need to be sexy. A bare form of unstyled inputs is not done — polish is
-part of the task, not a follow-up. Reference example: `app/Filament/Pages/EntraSettings.php`.
-
-- Group related fields in a `Section` with a heading and a `description()`
-  that tells the user what the section is for or where the values come from.
-- Give fields `prefixIcon()` and `helperText()` — especially for anything
-  the user has to go look up elsewhere (an ID from a portal, a value from
-  another system). Say exactly where to find it.
-- Set a page `icon()`/`navigationIcon` and a clear `getTitle()`/`getSubheading()`.
-  Use Heroicons that match the concept, not the first one that compiles.
-  Verify the case name exists in `vendor/filament/support/src/Icons/Heroicon.php`
-  before using it.
-- Use multi-column layouts (`columns()`) for related short fields; give long
-  or sensitive fields (secrets, notes) `columnSpanFull()`.
-- Style primary actions: a label that says what happens (`Save changes`, not
-  `Submit`), an icon, `keyBindings(['mod+s'])` where it fits.
-- This is real work on every new page, not optional extra scope — budget for
-  it the same way you budget for the test.
 
 ## Verification Scripts
 
@@ -152,17 +126,7 @@ part of the task, not a follow-up. Reference example: `app/Filament/Pages/EntraS
 
 ### Model Creation
 
-- All models and all tables should use UUIDs. No auto-increments.
 - When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `php artisan make:model --help` to check the available options.
-- All models should have this block before the class definition for PHPStorm to work properly:
-  ```php
-  /**
-   * @method static Model|static create(array $attributes = [])
-   * @method static Builder|static query()
-   *
-   * @mixin Builder
-   */
-  ```
 
 ## APIs & Eloquent Resources
 
@@ -216,6 +180,51 @@ part of the task, not a follow-up. Reference example: `app/Filament/Pages/EntraS
 - All model primary keys are UUIDs: migrations use `$table->uuid('id')->primary()`
   (and `$table->foreignUuid(...)` for references to them), models use Laravel's
   `HasUuids` trait. No auto-incrementing bigint IDs on any model.
+- Every model should carry this block before the class definition, for
+  PHPStorm to work properly:
+  ```php
+  /**
+   * @method static Model|static create(array $attributes = [])
+   * @method static Builder|static query()
+   *
+   * @mixin Builder
+   */
+  ```
+
+## General Conventions
+
+These live here, not inside the Boost-managed block above, because
+`artisan boost:update` (which runs on every `composer install`/`update`)
+regenerates that block from its own template and silently drops anything
+manually added inside it. Keep custom rules out of that block.
+
+- No CLI-driven browser testing (curl/chromium-cli simulating a browser).
+  Use real browser tools when available, or the project's established
+  Livewire::test()-based Filament testing pattern otherwise.
+- All files and methods should be documented inline.
+- No em dashes in any text.
+
+## Filament Page Design
+
+Pages need to be sexy. A bare form of unstyled inputs is not done -- polish
+is part of the task, not a follow-up. Reference example:
+`app/Filament/Pages/EntraSettings.php`.
+
+- Group related fields in a `Section` with a heading and a `description()`
+  that tells the user what the section is for or where the values come from.
+- Give fields `prefixIcon()` and `helperText()` -- especially for anything
+  the user has to go look up elsewhere (an ID from a portal, a value from
+  another system). Say exactly where to find it.
+- Set a page `icon()`/`navigationIcon` and a clear `getTitle()`/`getSubheading()`.
+  Use Heroicons that match the concept, not the first one that compiles.
+  Verify the case name exists in `vendor/filament/support/src/Icons/Heroicon.php`
+  before using it.
+- Use multi-column layouts (`columns()`) for related short fields; give long
+  or sensitive fields (secrets, notes) `columnSpanFull()`.
+- Style primary actions: a label that says what happens (`Save changes`, not
+  `Submit`), an icon, `keyBindings(['mod+s'])` where it fits.
+- This is real work on every new page, not optional extra scope -- budget
+  for it the same way you budget for the test.
 
 ## Organization Onboarding
 Two distinct, non-conflicting paths — don't confuse them:
@@ -300,15 +309,21 @@ See docs/plan.md for complete spec.
   First two secret-storage arch tests added (`tests/Arch/SecretStorageArchTest.php`)
 - First Secret Provider complete (docs/plans/07-first-secret-provider.md,
   docs/plan.md §6): real Azure Key Vault integration, two independent
-  Credential actions — `verifyAction()` (existence-check only, `/versions`
+  Credential actions -- `verifyAction()` (existence-check only, `/versions`
   endpoint) and `revealAction()` (fetches and displays the real value,
-  audit-logged) — see "Storage Modes & Encryption" above for the full
+  audit-logged) -- see "Storage Modes & Encryption" above for the full
   invariant. Minimal `AuditEvent` model added as a prerequisite (Foundation
-  never built one).
-- Next: Environment Notes (docs/plan.md §7) — free-text purpose/config-notes/
+  never built one). Credentials moved from a standalone Filament resource to
+  a relation manager nested under `Environment` (`CredentialsRelationManager`)
+  -- see "Storage Modes & Encryption" above.
+- Model change auditing added (`owen-it/laravel-auditing`, a new dependency):
+  `Customer`/`Environment`/`Credential` are `Auditable`; `Organization` is
+  deliberately excluded (would leak `azure_client_secret`). See "Model
+  Change Auditing" above -- distinct from `AuditEvent`, don't conflate them.
+- Next: Environment Notes (docs/plan.md §7) -- free-text purpose/config-notes/
   known-issues/troubleshooting fields on `Environment`. (Platform-Stored
   credentials, docs/plans/08, remain separate future work requiring the
-  full review process — not next up by default.)
+  full review process -- not next up by default.)
 
 ## TDD — Non-Negotiable Workflow
 
@@ -395,17 +410,22 @@ etc.) remains a violation regardless of storage mode.
 **Reference mode is built** (docs/plans/07): `App\Contracts\RetrievesSecretValue`
 port, `App\Services\AzureKeyVault\AzureKeyVaultSecretRetriever` adapter
 (client-credentials token against the org's own Entra app, then Key Vault's
-plain "get secret" endpoint — the one call in the codebase allowed to
+plain "get secret" endpoint -- the one call in the codebase allowed to
 receive a real value), resolved via `SecretProviderRetrieverResolver`.
-`CredentialResource::revealAction()` is the only caller: manual trigger,
-confirmation modal, the value goes straight into a one-shot Filament
-notification body (never assigned to a persisted Livewire property, never
-logged — failure paths only ever log status codes), and records
-`last_retrieved_at`/`last_retrieved_by` plus an `AuditEvent`. A separate,
-lower-stakes `verifyAction()` (existence-check only, via the `/versions`
-endpoint, never touches the value) coexists alongside it — the two are
-deliberately independent actions, not a replacement of one by the other.
-**PlatformStored mode is not built yet** — docs/plans/08, pending the Task 2
+`CredentialsRelationManager::revealAction()` is the only caller: manual
+trigger, confirmation modal, the value goes straight into a one-shot
+Filament notification body (never assigned to a persisted Livewire
+property, never logged -- failure paths only ever log status codes), and
+records `last_retrieved_at`/`last_retrieved_by` plus an `AuditEvent`. A
+separate, lower-stakes `verifyAction()` (existence-check only, via the
+`/versions` endpoint, never touches the value) coexists alongside it -- the
+two are deliberately independent actions, not a replacement of one by the
+other. Credentials are managed as a relation manager nested under each
+Environment's page (`App\Filament\Resources\Environments\RelationManagers\CredentialsRelationManager`),
+not a standalone top-level resource -- a credential is always browsed in
+the context of "this environment's credentials."
+
+**PlatformStored mode is not built yet** -- docs/plans/08, pending the Task 2
 encryption-approach decision, full review process required (see that plan's
 own "Execution" note).
 
@@ -424,5 +444,57 @@ own "Execution" note).
 storage mode later.** If a future change would touch the arch test
 allowlist, the Production guard, or the reveal-discipline pattern, treat it
 with the same review rigor as the original Foundation-phase `OrganizationScope`
-work (full review loop, not direct-TDD) — these are the platform's core
+work (full review loop, not direct-TDD) -- these are the platform's core
 compliance guarantees, not routine CRUD.
+
+## Model Change Auditing (owen-it/laravel-auditing)
+
+A different, complementary system from `AuditEvent` above -- read both
+entries together, don't conflate them:
+
+- **`AuditEvent`** (app model, built in docs/plans/07): one discrete
+  security event, "user X retrieved credential Y's real value at time Z."
+  Narrow, purpose-built, only fires on a Reveal.
+- **`Audit`** (`owen-it/laravel-auditing`, `App\Models\Audit` extends the
+  package's base): a general created/updated/deleted change trail --
+  old value -> new value, per attribute, for any model marked `Auditable`.
+  Answers "what changed and who changed it," not "who accessed a secret."
+
+**Auditable models:** `Customer`, `Environment`, `Credential`. **Not**
+`Organization` -- its `azure_client_secret` is captured by the package
+*after* Eloquent's `encrypted` cast decrypts it, so auditing `Organization`
+without an explicit `$auditExclude` would write the plaintext client secret
+into the `audits` table on every change. Don't add `Organization` to the
+Auditable list without excluding that column first.
+
+**Wiring pattern each Auditable model follows:**
+```php
+use Auditable, BelongsToAuditableOrganization, BelongsToOrganization, HasFactory, HasUuids {
+    BelongsToAuditableOrganization::transformAudit insteadof Auditable;
+}
+```
+The `insteadof` is required -- the package's own `Auditable` trait already
+defines a no-op `transformAudit()`, so without explicit conflict resolution
+PHP fatals on the collision. `BelongsToAuditableOrganization::transformAudit()`
+stamps `organization_id` onto the audit payload (see below).
+
+**Tenant-scoped like every other table:** the `audits` table has
+`organization_id` (nullable FK), populated per-row via each Auditable
+model's `transformAudit()` hook -- package-created Audit rows bypass normal
+model creation, so `BelongsToOrganization`'s usual `creating` hook never
+runs for them; this is the equivalent mechanism for this one table.
+`App\Models\Audit` applies `OrganizationScope` directly. UUID-keyed
+throughout (`id`, `auditable_id`, `user_id`) -- the package's published
+migration stub defaults to bigint/`morphs()`, adapted in this app's
+migration to `uuidMorphs()` etc., since no model here uses bigint PKs.
+
+**Testing note -- `audit.console`:** the package only audits console-run
+events (artisan commands, and critically `php artisan test`/Pest, which run
+through the console kernel) when `config('audit.console')` is true. Default
+is `false` (sensible for production -- don't audit seeders/migrations by
+default). `config/audit.php`'s `console` key is wrapped in
+`env('AUDIT_CONSOLE', false)` specifically so `phpunit.xml` can set
+`AUDIT_CONSOLE=true` for the test environment; without this, every
+auditing test silently produces zero `Audit` rows and it is not obvious
+why. If you add a new Auditable model and its creation test finds no audit
+record, check this first before assuming the wiring is broken.
