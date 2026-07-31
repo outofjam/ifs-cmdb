@@ -358,10 +358,14 @@ See docs/plan.md for complete spec.
   `navigator.clipboard.writeText()` call, a "Copied!" swap of the button's
   own `innerHTML` with a brief CSS opacity fade, then a revert -- no
   server round-trip, nothing logged twice.
-- Next: Environment Notes (docs/plan.md §7) -- free-text purpose/config-notes/
-  known-issues/troubleshooting fields on `Environment`. (Platform-Stored
-  credentials, docs/plans/08, remain separate future work requiring the
-  full review process -- not next up by default.)
+- Environment Notes complete (docs/plan.md §7 "Environment Knowledge"):
+  `Environment`'s single generic `notes` column replaced with five
+  purpose-built fields -- `purpose`, `configuration_notes`, `known_issues`,
+  `troubleshooting_notes`, `customer_procedures` -- matching the plan's
+  breakdown exactly rather than one free-text box. Grouped under an
+  "Environment knowledge" Section on both the Form and Infolist. (Platform-
+  Stored credentials, docs/plans/08, remain separate future work requiring
+  the full review process -- not next up by default.)
 
 ## TDD — Non-Negotiable Workflow
 

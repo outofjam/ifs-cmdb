@@ -61,8 +61,30 @@ class EnvironmentForm
                             ->helperText('From the environment\'s About/System Information page.')
                             ->placeholder('4821'),
                     ]),
-                Textarea::make('notes')
-                    ->columnSpanFull(),
+                Section::make('Environment knowledge')
+                    ->description('Context for anyone picking this environment up cold -- what it\'s for, how it\'s configured, and what tends to go wrong.')
+                    ->icon(Heroicon::OutlinedLightBulb)
+                    ->schema([
+                        Textarea::make('purpose')
+                            ->helperText('Why this environment exists and what it\'s used for.')
+                            ->columnSpanFull(),
+                        Textarea::make('configuration_notes')
+                            ->label('Configuration notes')
+                            ->helperText('Anything configured differently from a standard environment.')
+                            ->columnSpanFull(),
+                        Textarea::make('known_issues')
+                            ->label('Known issues')
+                            ->helperText('Recurring quirks or bugs specific to this environment.')
+                            ->columnSpanFull(),
+                        Textarea::make('troubleshooting_notes')
+                            ->label('Troubleshooting information')
+                            ->helperText('Steps that have fixed problems here before.')
+                            ->columnSpanFull(),
+                        Textarea::make('customer_procedures')
+                            ->label('Customer-specific procedures')
+                            ->helperText('Anything the customer expects before you touch this environment.')
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 }

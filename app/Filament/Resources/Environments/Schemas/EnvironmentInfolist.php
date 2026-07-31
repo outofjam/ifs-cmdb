@@ -50,13 +50,28 @@ class EnvironmentInfolist
                             ->label('Build number')
                             ->placeholder('Unknown'),
                     ]),
-                Section::make('Notes')
-                    ->description('Configuration details, known issues, and procedures specific to this environment.')
-                    ->icon(Heroicon::OutlinedDocumentText)
+                Section::make('Environment knowledge')
+                    ->description('Context for anyone picking this environment up cold -- what it\'s for, how it\'s configured, and what tends to go wrong.')
+                    ->icon(Heroicon::OutlinedLightBulb)
                     ->schema([
-                        TextEntry::make('notes')
-                            ->hiddenLabel()
-                            ->placeholder('No notes yet.')
+                        TextEntry::make('purpose')
+                            ->placeholder('Not set')
+                            ->columnSpanFull(),
+                        TextEntry::make('configuration_notes')
+                            ->label('Configuration notes')
+                            ->placeholder('Not set')
+                            ->columnSpanFull(),
+                        TextEntry::make('known_issues')
+                            ->label('Known issues')
+                            ->placeholder('None recorded')
+                            ->columnSpanFull(),
+                        TextEntry::make('troubleshooting_notes')
+                            ->label('Troubleshooting information')
+                            ->placeholder('Not set')
+                            ->columnSpanFull(),
+                        TextEntry::make('customer_procedures')
+                            ->label('Customer-specific procedures')
+                            ->placeholder('Not set')
                             ->columnSpanFull(),
                     ]),
             ]);

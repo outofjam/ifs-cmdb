@@ -22,7 +22,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  *
  * @mixin Builder
  */
-#[Fillable(['customer_id', 'owner_id', 'name', 'type', 'url', 'ifs_release', 'build_number', 'notes'])]
+#[Fillable(['customer_id', 'owner_id', 'name', 'type', 'url', 'ifs_release', 'build_number', 'purpose', 'configuration_notes', 'known_issues', 'troubleshooting_notes', 'customer_procedures'])]
 class Environment extends Model implements AuditableContract
 {
     /** @use HasFactory<EnvironmentFactory> */

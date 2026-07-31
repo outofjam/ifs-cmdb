@@ -28,7 +28,11 @@ class EnvironmentFactory extends Factory
             'url' => fake()->url(),
             'ifs_release' => fake()->randomElement(['24R1', '24R2', '25R1']),
             'build_number' => (string) fake()->numberBetween(1000, 9999),
-            'notes' => null,
+            'purpose' => null,
+            'configuration_notes' => null,
+            'known_issues' => null,
+            'troubleshooting_notes' => null,
+            'customer_procedures' => null,
         ];
     }
 }
