@@ -766,6 +766,16 @@ The consulting team can:
 * Understand their delivery landscape
 
 
+## Known Gap: platform owner not isolated from org admin
+The platform owner shares the same auth guard/session as the org-scoped
+`/admin` panel and must currently belong to an `Organization` (`User.organization_id`
+is `NOT NULL`), making the platform owner incidentally an org member too.
+Logging into `/platform` also authenticates `/admin` for that user's own org
+— no separate login boundary. Should be isolated: platform admin won't be
+an org admin. Backlog — see CLAUDE.md "Organization Onboarding" for the fix
+direction (dedicated auth guard for the platform panel, decouple the
+platform-owner concept from needing an org at all).
+
 ## Known Gap (Phase 2 prerequisite): revenue gate on org creation
 Org creation is currently fully open (self-serve signup, no approval step) —
 a deliberate choice for the pre-revenue, pre-public-launch stage this product

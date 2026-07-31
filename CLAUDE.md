@@ -33,6 +33,27 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
 - Check for existing components to reuse before writing a new one.
 
+## Filament Page Design
+
+Pages need to be sexy. A bare form of unstyled inputs is not done — polish is
+part of the task, not a follow-up. Reference example: `app/Filament/Pages/EntraSettings.php`.
+
+- Group related fields in a `Section` with a heading and a `description()`
+  that tells the user what the section is for or where the values come from.
+- Give fields `prefixIcon()` and `helperText()` — especially for anything
+  the user has to go look up elsewhere (an ID from a portal, a value from
+  another system). Say exactly where to find it.
+- Set a page `icon()`/`navigationIcon` and a clear `getTitle()`/`getSubheading()`.
+  Use Heroicons that match the concept, not the first one that compiles.
+  Verify the case name exists in `vendor/filament/support/src/Icons/Heroicon.php`
+  before using it.
+- Use multi-column layouts (`columns()`) for related short fields; give long
+  or sensitive fields (secrets, notes) `columnSpanFull()`.
+- Style primary actions: a label that says what happens (`Save changes`, not
+  `Submit`), an icon, `keyBindings(['mod+s'])` where it fits.
+- This is real work on every new page, not optional extra scope — budget for
+  it the same way you budget for the test.
+
 ## Verification Scripts
 
 - Do not create verification scripts or tinker when tests cover that functionality and prove they work. Unit and feature tests are more important.
@@ -222,6 +243,15 @@ that blocks *new org creation*, since that now happens via signup, not login.
 (`/platform`, plain password login, not Microsoft), lists all organizations.
 Not the same as `OrganizationRole::PlatformAdministrator`, which is scoped to
 one org (an org's own admin).
+
+**Known backlog item — not isolated yet:** the platform owner is currently
+*also* a regular member of an org (every `User` row needs an
+`organization_id`), and both panels share the same `web` auth guard/session.
+Logging into `/platform` therefore also authenticates `/admin` for that
+user's own org, with no separate login boundary. Platform admin should not
+be an org admin — fix direction: a dedicated auth guard for the `platform`
+panel (its own session), and likely decoupling the platform-owner concept
+from needing an `organization_id` at all. Not built — backlog, not urgent.
 
 See docs/plans/03-org-self-service-onboarding.md for the domain-allowlist
 mechanism (`ApprovedDomain`, still used, just no longer gates org creation)
