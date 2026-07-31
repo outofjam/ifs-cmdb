@@ -18,3 +18,8 @@ it('resolves every other provider to null', function (SecretProvider $provider) 
     SecretProvider::HashicorpVault,
     SecretProvider::AwsSecretsManager,
 ]);
+
+it('lists every provider with a working verifier or retriever as implemented', function () {
+    expect((new SecretProviderVerifierResolver)->implementedProviders())
+        ->toBe([SecretProvider::AzureKeyVault, SecretProvider::Bitwarden]);
+});

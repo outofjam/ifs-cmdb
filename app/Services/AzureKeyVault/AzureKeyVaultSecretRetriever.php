@@ -65,4 +65,9 @@ class AzureKeyVaultSecretRetriever implements RetrievesSecretValue
 
         return $value;
     }
+
+    public function isConfigured(Organization $organization): bool
+    {
+        return filled($organization->azure_key_vault_url);
+    }
 }

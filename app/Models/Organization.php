@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
  *
  * @mixin Builder
  */
-#[Fillable(['name', 'slug', 'azure_client_id', 'azure_client_secret', 'azure_tenant_id', 'azure_key_vault_url'])]
+#[Fillable(['name', 'slug', 'azure_client_id', 'azure_client_secret', 'azure_tenant_id', 'azure_key_vault_url', 'bitwarden_access_token'])]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
@@ -50,6 +50,7 @@ class Organization extends Model
     {
         return [
             'azure_client_secret' => 'encrypted',
+            'bitwarden_access_token' => 'encrypted',
         ];
     }
 

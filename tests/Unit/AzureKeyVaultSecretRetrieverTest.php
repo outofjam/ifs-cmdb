@@ -2,6 +2,7 @@
 
 use App\Exceptions\SecretNotFoundException;
 use App\Exceptions\SecretRetrievalFailedException;
+use App\Models\Organization;
 use App\Services\AzureKeyVault\AzureKeyVaultSecretRetriever;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -56,4 +57,11 @@ it('throws SecretRetrievalFailedException when the connection times out', functi
 
     expect(fn () => (new AzureKeyVaultSecretRetriever)->retrieve(organizationWithVaultConfig(), 'acme-uat-ifs-admin'))
         ->toThrow(SecretRetrievalFailedException::class);
+});
+
+it('is configured only when the organization has a vault URL', function () {
+    $retriever = new AzureKeyVaultSecretRetriever;
+
+    expect($retriever->isConfigured(organizationWithVaultConfig()))->toBeTrue()
+        ->and($retriever->isConfigured(Organization::factory()->create()))->toBeFalse();
 });

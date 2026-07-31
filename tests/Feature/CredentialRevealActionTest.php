@@ -1,12 +1,19 @@
 <?php
 
+use App\Enums\EnvironmentType;
 use App\Enums\SecretProvider;
 use App\Filament\Resources\Environments\Pages\ViewEnvironment;
 use App\Filament\Resources\Environments\RelationManagers\CredentialsRelationManager;
 use App\Models\AuditEvent;
+use App\Models\Credential;
+use App\Models\Customer;
+use App\Models\Environment;
+use App\Models\Organization;
 use App\Models\Scopes\OrganizationScope;
+use App\Models\User;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Process;
 use Livewire\Livewire;
 
 it('reveals the secret value, records who retrieved it, and logs an audit event', function () {
@@ -76,9 +83,9 @@ it('notifies without crashing when retrieval fails', function () {
     expect(AuditEvent::withoutGlobalScope(OrganizationScope::class)->where('credential_id', $credential->id)->count())->toBe(0);
 });
 
-it('is absent when the credential\'s provider is not Azure Key Vault', function () {
+it('is absent when the credential\'s provider has no integration at all', function () {
     $credential = credentialWithVaultConfig();
-    $credential->update(['secret_provider' => SecretProvider::Bitwarden]);
+    $credential->update(['secret_provider' => SecretProvider::HashicorpVault]);
 
     Livewire::test(CredentialsRelationManager::class, [
         'ownerRecord' => $credential->environment,
@@ -93,6 +100,37 @@ it('is absent when the organization has no vault configured', function () {
         'ownerRecord' => $credential->environment,
         'pageClass' => ViewEnvironment::class,
     ])->assertActionHidden(TestAction::make('reveal')->table($credential));
+});
+
+it('reveals a Bitwarden secret value through the same action', function () {
+    $organization = Organization::factory()->create(['bitwarden_access_token' => '0.access-token-value']);
+    $user = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    $customer = Customer::factory()->for($organization)->create();
+    $environment = Environment::factory()->for($organization)->create([
+        'customer_id' => $customer->id,
+        'type' => EnvironmentType::Uat,
+    ]);
+    $credential = Credential::factory()->for($organization)->create([
+        'environment_id' => $environment->id,
+        'secret_provider' => SecretProvider::Bitwarden,
+        'secret_reference' => 'be8e0ad8-d545-4017-a55a-b02f014d4158',
+    ]);
+
+    Process::fake([
+        '*bws*' => Process::result(output: json_encode(['value' => 'bitwarden-secret-value'])),
+    ]);
+
+    Livewire::test(CredentialsRelationManager::class, [
+        'ownerRecord' => $environment,
+        'pageClass' => ViewEnvironment::class,
+    ])
+        ->assertActionVisible(TestAction::make('reveal')->table($credential))
+        ->callAction(TestAction::make('reveal')->table($credential))
+        ->assertNotified();
+
+    expect($credential->fresh()->last_retrieved_at)->not->toBeNull();
 });
 
 it('never appears in the credentials table', function () {

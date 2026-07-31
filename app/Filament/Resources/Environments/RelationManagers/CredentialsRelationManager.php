@@ -80,7 +80,8 @@ class CredentialsRelationManager extends RelationManager
                     ->schema([
                         Select::make('secret_provider')
                             ->label('Secret provider')
-                            ->options(SecretProvider::class)
+                            ->options($this->selectableSecretProviderOptions())
+                            ->helperText('Only providers with a working integration are listed.')
                             ->required(),
                         TextInput::make('secret_reference')
                             ->label('Reference')
@@ -142,7 +143,7 @@ class CredentialsRelationManager extends RelationManager
             ])
             ->filters([
                 SelectFilter::make('secret_provider')
-                    ->options(SecretProvider::class),
+                    ->options($this->selectableSecretProviderOptions()),
             ])
             ->headerActions([
                 CreateAction::make(),
@@ -157,6 +158,20 @@ class CredentialsRelationManager extends RelationManager
     }
 
     /**
+     * secret_provider => label options for only the providers with a real
+     * integration -- never offer a provider the platform can't actually
+     * reach as though it were a working choice.
+     *
+     * @return array<string, string>
+     */
+    protected function selectableSecretProviderOptions(): array
+    {
+        return collect(app(SecretProviderVerifierResolver::class)->implementedProviders())
+            ->mapWithKeys(fn (SecretProvider $provider): array => [$provider->value => $provider->getLabel()])
+            ->all();
+    }
+
+    /**
      * Checks the credential's secret_reference against its provider's
      * vault. Only shown when that provider has a verifier implemented and
      * the org has configured a vault to check against.
@@ -167,11 +182,9 @@ class CredentialsRelationManager extends RelationManager
             ->label('Verify')
             ->icon(Heroicon::OutlinedShieldCheck)
             ->visible(function (Credential $record): bool {
-                if ($record->secret_provider !== SecretProvider::AzureKeyVault) {
-                    return false;
-                }
+                $verifier = app(SecretProviderVerifierResolver::class)->resolve($record->secret_provider);
 
-                return filled($record->organization->azure_key_vault_url);
+                return $verifier?->isConfigured($record->organization) ?? false;
             })
             ->action(function (Credential $record): void {
                 $verifier = app(SecretProviderVerifierResolver::class)->resolve($record->secret_provider);
@@ -205,11 +218,9 @@ class CredentialsRelationManager extends RelationManager
             ->requiresConfirmation()
             ->modalDescription('This fetches the actual secret value from your vault and displays it once. It is not stored anywhere by this platform.')
             ->visible(function (Credential $record): bool {
-                if ($record->secret_provider !== SecretProvider::AzureKeyVault) {
-                    return false;
-                }
+                $retriever = app(SecretProviderRetrieverResolver::class)->resolve($record->secret_provider);
 
-                return filled($record->organization->azure_key_vault_url);
+                return $retriever?->isConfigured($record->organization) ?? false;
             })
             ->action(function (Credential $record): void {
                 $retriever = app(SecretProviderRetrieverResolver::class)->resolve($record->secret_provider);

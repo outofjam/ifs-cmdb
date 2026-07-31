@@ -320,6 +320,12 @@ See docs/plan.md for complete spec.
   `Customer`/`Environment`/`Credential` are `Auditable`; `Organization` is
   deliberately excluded (would leak `azure_client_secret`). See "Model
   Change Auditing" above -- distinct from `AuditEvent`, don't conflate them.
+- Second secret provider complete (docs/plans/09-bitwarden-secrets-manager.md):
+  Bitwarden Secrets Manager, Reveal only (no Verify -- see "Storage Modes &
+  Encryption" above for why). Shells out to the `bws` CLI, a new *runtime*
+  dependency (not composer) that must exist in `PATH` wherever this app
+  runs. `Credential` provider picker now generalized via `isConfigured()`
+  on both secret-provider contracts instead of hardcoding Key Vault.
 - Next: Environment Notes (docs/plan.md §7) -- free-text purpose/config-notes/
   known-issues/troubleshooting fields on `Environment`. (Platform-Stored
   credentials, docs/plans/08, remain separate future work requiring the
@@ -423,7 +429,42 @@ two are deliberately independent actions, not a replacement of one by the
 other. Credentials are managed as a relation manager nested under each
 Environment's page (`App\Filament\Resources\Environments\RelationManagers\CredentialsRelationManager`),
 not a standalone top-level resource -- a credential is always browsed in
-the context of "this environment's credentials."
+the context of "this environment's credentials." The provider picker
+(create/edit form and the table filter) only ever lists providers with a
+real integration -- `SecretProviderVerifierResolver::implementedProviders()`
+-- never a provider the platform can't actually reach.
+
+**Second provider: Bitwarden Secrets Manager is built** (docs/plans/09).
+Architecturally different from Key Vault -- Secrets Manager is end-to-end
+encrypted, so there's no plain REST endpoint. Integration is a shell-out to
+the `bws` CLI (a standalone Rust binary) via `Illuminate\Support\Facades\Process`,
+not a new composer dependency or PHP extension (the alternative, the
+official PHP SDK, needs `ext-ffi` plus a native binary per OS/architecture
+and is beta quality -- rejected for that reason).
+- **`bws` is a runtime dependency, not a composer one** -- it must be
+  present in `PATH` wherever this app actually runs (local dev, whatever
+  it deploys to, CI if tests ever stop faking `Process`). Nothing in
+  `composer.json` enforces this; if reveals start failing in an
+  environment, check for the binary first.
+- **The access token is passed via `Process::env()`, never as a command
+  argument.** CLI arguments are visible to any user on the same host via
+  `ps`/`/proc/{pid}/cmdline`; environment variables scoped to the child
+  process are not. This is a standing rule for *any* future subprocess-based
+  provider, the same way "timeout + typed exceptions" is standing for
+  HTTP-based ones (`laravel:http-client-resilience`).
+- **No Verify action for Bitwarden, deliberately.** Both `bws secret get`
+  and `bws secret list` return the full secret value -- there's no
+  metadata-only existence check the way Key Vault's `/versions` endpoint
+  gives one. A "Verify" that fetches the real value just to discard it
+  would be misleading (implies a cheaper action, does identical work to
+  Reveal) for no benefit. `SecretProviderVerifierResolver` stays `null`
+  for Bitwarden -- don't "fix" this later without re-reading this note.
+- **`isConfigured(Organization): bool`** is now part of both
+  `RetrievesSecretValue` and `VerifiesSecretReference` (added when
+  Bitwarden was built) -- `CredentialsRelationManager`'s Verify/Reveal
+  `visible()` checks resolve the provider's adapter and ask this, rather
+  than hardcoding a specific provider/column. Any new provider only needs
+  to implement the contract correctly; the UI wiring doesn't change.
 
 **PlatformStored mode is not built yet** -- docs/plans/08, pending the Task 2
 encryption-approach decision, full review process required (see that plan's

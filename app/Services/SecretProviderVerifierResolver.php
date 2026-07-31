@@ -20,4 +20,20 @@ class SecretProviderVerifierResolver
             default => null,
         };
     }
+
+    /**
+     * Providers with a working verifier, retriever, or both -- the only
+     * ones a Credential should ever be creatable with. Selecting a
+     * provider the platform can't actually reach isn't a real choice.
+     *
+     * @return array<int, SecretProvider>
+     */
+    public function implementedProviders(): array
+    {
+        return array_values(array_filter(
+            SecretProvider::cases(),
+            fn (SecretProvider $provider): bool => $this->resolve($provider) !== null
+                || app(SecretProviderRetrieverResolver::class)->resolve($provider) !== null,
+        ));
+    }
 }

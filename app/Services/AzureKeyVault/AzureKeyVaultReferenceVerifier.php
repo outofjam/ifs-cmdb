@@ -61,4 +61,9 @@ class AzureKeyVaultReferenceVerifier implements VerifiesSecretReference
 
         return filled($versions) ? VerificationStatus::Verified : VerificationStatus::NotFound;
     }
+
+    public function isConfigured(Organization $organization): bool
+    {
+        return filled($organization->azure_key_vault_url);
+    }
 }

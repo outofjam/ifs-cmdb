@@ -19,4 +19,11 @@ interface RetrievesSecretValue
      * @throws SecretRetrievalFailedException
      */
     public function retrieve(Organization $organization, string $secretReference): string;
+
+    /**
+     * Whether the org has supplied everything this provider needs (a vault
+     * URL, an access token, etc.) -- used to hide the Reveal action rather
+     * than offer one that would just fail.
+     */
+    public function isConfigured(Organization $organization): bool;
 }

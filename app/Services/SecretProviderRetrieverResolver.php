@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\RetrievesSecretValue;
 use App\Enums\SecretProvider;
 use App\Services\AzureKeyVault\AzureKeyVaultSecretRetriever;
+use App\Services\Bitwarden\BitwardenSecretRetriever;
 
 /**
  * Maps a SecretProvider to its value retriever, or null if that provider
@@ -17,6 +18,7 @@ class SecretProviderRetrieverResolver
     {
         return match ($provider) {
             SecretProvider::AzureKeyVault => app(AzureKeyVaultSecretRetriever::class),
+            SecretProvider::Bitwarden => app(BitwardenSecretRetriever::class),
             default => null,
         };
     }

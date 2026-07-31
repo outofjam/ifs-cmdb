@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\VerificationStatus;
+use App\Models\Organization;
 use App\Services\AzureKeyVault\AzureKeyVaultReferenceVerifier;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
@@ -72,4 +73,11 @@ it('only ever calls the versions endpoint, never the endpoint that returns the s
     (new AzureKeyVaultReferenceVerifier)->verify(organizationWithVaultConfig(), 'acme-uat-ifs-admin');
 
     Http::assertSent(fn (Request $request) => str_contains($request->url(), '/versions'));
+});
+
+it('is configured only when the organization has a vault URL', function () {
+    $verifier = new AzureKeyVaultReferenceVerifier;
+
+    expect($verifier->isConfigured(organizationWithVaultConfig()))->toBeTrue()
+        ->and($verifier->isConfigured(Organization::factory()->create()))->toBeFalse();
 });

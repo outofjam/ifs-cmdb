@@ -12,4 +12,11 @@ use App\Models\Organization;
 interface VerifiesSecretReference
 {
     public function verify(Organization $organization, string $secretReference): VerificationStatus;
+
+    /**
+     * Whether the org has supplied everything this provider needs (a vault
+     * URL, an access token, etc.) -- used to hide the Verify action rather
+     * than offer one that would just fail.
+     */
+    public function isConfigured(Organization $organization): bool;
 }
