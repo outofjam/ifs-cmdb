@@ -326,6 +326,26 @@ See docs/plan.md for complete spec.
   dependency (not composer) that must exist in `PATH` wherever this app
   runs. `Credential` provider picker now generalized via `isConfigured()`
   on both secret-provider contracts instead of hardcoding Key Vault.
+- Audit history UI added (`tapp/filament-auditing`, a new dependency on top
+  of `owen-it/laravel-auditing`): `AuditsRelationManager::class` wired into
+  `CustomerResource`/`EnvironmentResource` (an "Audits" tab on each view
+  page). `Credential` has no resource page of its own to hang that tab off
+  of (it's nested under Environment, see "Storage Modes & Encryption"
+  above), so its audit trail is a row action instead --
+  `CredentialsRelationManager::viewAuditHistoryAction()` opens a modal
+  listing that credential's `Audit` records. Two new narrow policies,
+  `App\Policies\CustomerPolicy`/`EnvironmentPolicy`, gate the package's
+  `audit`/`restoreAudit` abilities -- **deliberately define only those two
+  methods, no standard CRUD methods** (Filament only defers to a policy
+  method that actually exists on the class; adding `viewAny`/`view`/etc.
+  stubs that return `false`, which is what `make:policy` generates by
+  default, would silently lock everyone out of Customer/Environment CRUD
+  app-wide). `audit` is allowed for any user in the record's own
+  organization; `restoreAudit` (rolling a record back to a prior state) is
+  denied for everyone -- viewing history was requested, restoring wasn't.
+  The package's own standalone global `AuditResource` (a top-level "browse
+  every audit" nav item) was deliberately not registered -- kept scoped to
+  per-screen tabs.
 - Next: Environment Notes (docs/plan.md §7) -- free-text purpose/config-notes/
   known-issues/troubleshooting fields on `Environment`. (Platform-Stored
   credentials, docs/plans/08, remain separate future work requiring the

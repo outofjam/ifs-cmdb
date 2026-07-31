@@ -28,6 +28,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -151,6 +152,7 @@ class CredentialsRelationManager extends RelationManager
             ->recordActions([
                 static::verifyAction(),
                 static::revealAction(),
+                static::viewAuditHistoryAction(),
                 ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make(),
@@ -256,5 +258,26 @@ class CredentialsRelationManager extends RelationManager
                     ->persistent()
                     ->send();
             });
+    }
+
+    /**
+     * Credential has no resource page of its own to hang the package's
+     * AuditsRelationManager off of (it's nested under Environment, see the
+     * class docblock), so its audit trail is shown here instead: a row
+     * action that opens a modal listing that credential's Audit records.
+     */
+    public static function viewAuditHistoryAction(): Action
+    {
+        return Action::make('viewAuditHistory')
+            ->label('Audit history')
+            ->icon(Heroicon::OutlinedClock)
+            ->color('gray')
+            ->modalHeading(fn (Credential $record): string => "Audit history: {$record->name}")
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel('Close')
+            ->modalContent(fn (Credential $record): View => view(
+                'filament.credentials.audit-history',
+                ['audits' => $record->audits()->with('user')->latest()->get()],
+            ));
     }
 }

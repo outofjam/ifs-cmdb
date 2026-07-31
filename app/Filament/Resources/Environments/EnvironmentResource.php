@@ -16,6 +16,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
 
 class EnvironmentResource extends Resource
 {
@@ -42,6 +43,7 @@ class EnvironmentResource extends Resource
     {
         return [
             CredentialsRelationManager::class,
+            AuditsRelationManager::class,
         ];
     }
 

@@ -116,3 +116,29 @@ it('creates a credential attached to the environment through the form', function
         ->and($credential->secret_provider)->toBe(SecretProvider::AzureKeyVault)
         ->and($credential->owner_id)->toBe($owner->id);
 });
+
+it('shows a credential\'s audit history through a row action modal', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    $customer = Customer::factory()->for($organization)->create();
+    $environment = Environment::factory()->for($organization)->create([
+        'customer_id' => $customer->id,
+        'type' => EnvironmentType::Uat,
+    ]);
+    $credential = Credential::factory()->for($organization)->create([
+        'environment_id' => $environment->id,
+        'name' => 'Original name',
+    ]);
+    $credential->update(['name' => 'Renamed credential']);
+
+    Livewire::test(CredentialsRelationManager::class, [
+        'ownerRecord' => $environment,
+        'pageClass' => ViewEnvironment::class,
+    ])
+        ->mountAction(TestAction::make('viewAuditHistory')->table($credential))
+        ->assertMountedActionModalSee($user->name)
+        ->assertMountedActionModalSee('Renamed credential')
+        ->assertMountedActionModalSee('Original name');
+});
