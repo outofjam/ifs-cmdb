@@ -271,10 +271,21 @@ be an org admin — fix direction: a dedicated auth guard for the `platform`
 panel (its own session), and likely decoupling the platform-owner concept
 from needing an `organization_id` at all. Not built — backlog, not urgent.
 
-**Known backlog item — no org-admin user management UI:** Microsoft-provisioned
-team members always start as `OrganizationRole::Viewer` by design. There's no
-UI yet for an org admin to view their org's users or promote one to
-`PlatformAdministrator` — role changes require a direct DB edit.
+**Org-admin user management UI is built** (`App\Filament\Resources\Users\UserResource`):
+a `PlatformAdministrator` can see every user in their own organization and
+change a teammate's role, closing the gap where this previously required a
+direct DB edit. Microsoft-provisioned team members still always start as
+`OrganizationRole::Viewer` by design — this UI is how an admin promotes them
+afterward. List-only: no create action (users are provisioned via signup or
+Entra, never by an admin through this screen) and no delete action (not
+asked for). `UserResource::canViewAny()` is overridden directly on the
+Resource rather than via a `UserPolicy` -- Filament defers to a Policy
+method that exists on the class, and a `UserPolicy` would route every other
+User-related Gate check in the app through it, not just this one screen (see
+the `CustomerPolicy`/`EnvironmentPolicy` note above for the same reasoning).
+The "Change role" action is hidden on the acting admin's own row, so an
+admin can't demote themselves and lock the org out of admin access with no
+self-service way back in.
 
 See docs/plans/03-org-self-service-onboarding.md (superseded, kept for
 history only — do not build anything from it) and
@@ -366,6 +377,9 @@ See docs/plan.md for complete spec.
   "Environment knowledge" Section on both the Form and Infolist. (Platform-
   Stored credentials, docs/plans/08, remain separate future work requiring
   the full review process -- not next up by default.)
+- Org-admin user management UI complete -- see "Organization Onboarding"
+  above for `App\Filament\Resources\Users\UserResource` details. Closes the
+  backlog item where role changes required a direct DB edit.
 
 ## TDD — Non-Negotiable Workflow
 
