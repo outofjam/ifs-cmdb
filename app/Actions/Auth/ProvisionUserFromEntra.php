@@ -3,36 +3,33 @@
 namespace App\Actions\Auth;
 
 use App\Enums\OrganizationRole;
-use App\Exceptions\Auth\OrganizationNotApprovedException;
-use App\Models\ApprovedDomain;
+use App\Models\Organization;
 use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
-use Illuminate\Support\Str;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
+/**
+ * Attaches (or creates) the local User record for a Microsoft-authenticated
+ * login. The organization has already been resolved and its Entra tenant ID
+ * verified by MicrosoftAuthController::callback() before this runs -- this
+ * class only handles the local user record.
+ */
 class ProvisionUserFromEntra
 {
-    public function handle(SocialiteUser $entraUser): User
+    /**
+     * Finds the existing user by email under the given organization, or
+     * creates a new Viewer-role user attached to it.
+     */
+    public function handle(SocialiteUser $entraUser, Organization $organization): User
     {
-        $domain = Str::after($entraUser->getEmail(), '@');
-
-        // Runs before login, so there's no authenticated user yet — OrganizationScope
-        // denies all rows with no auth context, which would otherwise hide any approved
-        // domain / existing user and (for the user lookup) create a duplicate on every
-        // repeat login.
-        $approvedDomain = ApprovedDomain::withoutGlobalScope(OrganizationScope::class)
-            ->where('domain', $domain)
-            ->first();
-
-        if ($approvedDomain === null) {
-            throw new OrganizationNotApprovedException($domain);
-        }
-
+        // Runs before login, so there's no authenticated user yet -- OrganizationScope
+        // denies all rows with no auth context, which would otherwise hide any
+        // existing user and create a duplicate on every repeat login.
         return User::withoutGlobalScope(OrganizationScope::class)->firstOrCreate(
             ['email' => $entraUser->getEmail()],
             [
                 'name' => $entraUser->getName(),
-                'organization_id' => $approvedDomain->organization_id,
+                'organization_id' => $organization->id,
                 'role' => OrganizationRole::Viewer,
                 'password' => str()->random(40),
             ],

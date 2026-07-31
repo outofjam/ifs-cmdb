@@ -44,7 +44,18 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Builds an unsigned JWT string for tests that exercise Entra access-token
+ * claim extraction. Signature isn't checked by the app (see
+ * ExtractEntraTenantIdFromToken's docblock for why), so a fake one is fine.
+ *
+ * @param  array<string, mixed>  $payload
+ */
+function fakeJwt(array $payload): string
 {
-    // ..
+    $base64url = fn (string $data) => rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+
+    return $base64url(json_encode(['alg' => 'RS256', 'typ' => 'JWT']))
+        .'.'.$base64url(json_encode($payload))
+        .'.fake-signature';
 }

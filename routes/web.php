@@ -13,8 +13,5 @@ Route::get('/auth/microsoft/start', [MicrosoftAuthController::class, 'start'])
 Route::post('/auth/microsoft/start', [MicrosoftAuthController::class, 'resolve'])
     ->name('auth.microsoft.resolve');
 
-Route::get('/auth/microsoft/redirect', [MicrosoftAuthController::class, 'redirect'])
-    ->name('auth.microsoft.redirect');
-
 Route::get('/auth/microsoft/callback', [MicrosoftAuthController::class, 'callback'])
     ->name('auth.microsoft.callback');
