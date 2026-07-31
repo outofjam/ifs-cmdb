@@ -12,6 +12,7 @@ use App\Models\Organization;
 use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
+use Filament\Notifications\Livewire\Notifications;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
 use Livewire\Livewire;
@@ -46,6 +47,45 @@ it('reveals the secret value, records who retrieved it, and logs an audit event'
 
     expect($event->action)->toBe('credential_value_retrieved')
         ->and($event->user_id)->toBe($user->id);
+});
+
+it('displays the revealed value as a copyable, monospaced code block', function () {
+    $credential = credentialWithVaultConfig();
+
+    Http::fake([
+        'login.microsoftonline.com/*' => Http::response(['access_token' => 'fake-token']),
+        '*.vault.azure.net/secrets/*' => Http::response([
+            'value' => 'super-secret-password',
+            'id' => 'https://acme-vault.vault.azure.net/secrets/acme-uat-ifs-admin/abc',
+        ]),
+    ]);
+
+    Livewire::test(CredentialsRelationManager::class, [
+        'ownerRecord' => $credential->environment,
+        'pageClass' => ViewEnvironment::class,
+    ])
+        ->callAction(TestAction::make('reveal')->table($credential));
+
+    // session()->pull() is read-once, so this reads the flashed notification
+    // directly instead of also calling ->assertNotified() first (which
+    // would have already drained it via the same pull()).
+    $notificationsComponent = new Notifications;
+    $notificationsComponent->mount();
+    $notification = $notificationsComponent->notifications->sole();
+
+    expect($notification->getBody())
+        ->toContain('<pre')
+        ->toContain('super-secret-password');
+
+    $copyAction = collect($notification->getActions())->sole(fn ($action) => $action->getName() === 'copy');
+
+    // Must run purely client-side: the Notifications Livewire component
+    // doesn't implement HasActions, so the default wire:click="mountAction"
+    // handler 500s if it's left enabled alongside a custom one.
+    expect($copyAction->isLivewireClickHandlerEnabled())->toBeFalse()
+        ->and($copyAction->getAlpineClickHandler())->toContain('super-secret-password')
+        ->and($copyAction->getAlpineClickHandler())->toContain('Copied!')
+        ->and($copyAction->getAlpineClickHandler())->toContain('opacity');
 });
 
 it('notifies without crashing when the secret is not found', function () {

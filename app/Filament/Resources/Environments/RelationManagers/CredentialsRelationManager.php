@@ -31,6 +31,7 @@ use Filament\Tables\Table;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Js;
 
 /**
  * Credentials nested under their Environment's view page, rather than a
@@ -253,9 +254,40 @@ class CredentialsRelationManager extends RelationManager
 
                 Notification::make()
                     ->title('Secret value')
-                    ->body($value)
+                    ->body(sprintf(
+                        '<pre class="max-w-full overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-gray-100 px-3 py-2 font-mono text-sm text-gray-950 dark:bg-white/5 dark:text-white">%s</pre>',
+                        e($value),
+                    ))
                     ->success()
                     ->persistent()
+                    ->actions([
+                        Action::make('copy')
+                            ->label('Copy to clipboard')
+                            ->icon(Heroicon::OutlinedClipboardDocument)
+                            // Purely client-side: the Notifications Livewire
+                            // component doesn't implement HasActions, so the
+                            // default wire:click="mountAction(...)" handler
+                            // would 500. alpineClickHandler() replaces that
+                            // default entirely instead of adding alongside it.
+                            // Swaps the whole button's content to "Copied!"
+                            // for a couple seconds, then restores the original
+                            // icon+label markup -- saving/restoring innerHTML
+                            // outright instead of hunting for a specific child
+                            // node, since Filament gives no CSS hook for the
+                            // label alone and a child-node search proved too
+                            // fragile against the button's actual markup.
+                            // The swap itself fades via a plain CSS opacity
+                            // transition rather than an instant cut.
+                            ->alpineClickHandler(
+                                'window.navigator.clipboard.writeText('.Js::from($value).');'
+                                .'const original = $el.innerHTML;'
+                                .'$el.style.transition = '.Js::from('opacity 150ms ease').';'
+                                .'$el.style.opacity = 0;'
+                                .'setTimeout(() => { $el.textContent = '.Js::from('Copied!').'; $el.style.opacity = 1; }, 150);'
+                                .'setTimeout(() => { $el.style.opacity = 0; }, 2000);'
+                                .'setTimeout(() => { $el.innerHTML = original; $el.style.opacity = 1; }, 2150);'
+                            ),
+                    ])
                     ->send();
             });
     }

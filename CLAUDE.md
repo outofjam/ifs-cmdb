@@ -346,6 +346,18 @@ See docs/plan.md for complete spec.
   The package's own standalone global `AuditResource` (a top-level "browse
   every audit" nav item) was deliberately not registered -- kept scoped to
   per-screen tabs.
+- Reveal notification polished: the revealed secret value renders in a
+  monospaced `<pre>` block instead of plain text, with a "Copy to
+  clipboard" action next to it. That action must not use the default
+  `Filament\Actions\Action` click behavior -- the notification renders
+  inside `Filament\Notifications\Livewire\Notifications`, which doesn't
+  implement `HasActions`, so the default `wire:click="mountAction(...)"`
+  500s. `->alpineClickHandler(...)` replaces the click handler entirely
+  (rather than `->extraAttributes(['x-on:click' => ...])`, which only adds
+  a handler alongside the broken default) with a pure client-side
+  `navigator.clipboard.writeText()` call, a "Copied!" swap of the button's
+  own `innerHTML` with a brief CSS opacity fade, then a revert -- no
+  server round-trip, nothing logged twice.
 - Next: Environment Notes (docs/plan.md §7) -- free-text purpose/config-notes/
   known-issues/troubleshooting fields on `Environment`. (Platform-Stored
   credentials, docs/plans/08, remain separate future work requiring the
