@@ -10,6 +10,11 @@ class ViewEnvironment extends ViewRecord
 {
     protected static string $resource = EnvironmentResource::class;
 
+    public function getSubheading(): string
+    {
+        return "{$this->record->customer->name} · {$this->record->type->getLabel()}";
+    }
+
     protected function getHeaderActions(): array
     {
         return [
