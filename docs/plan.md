@@ -84,9 +84,11 @@ The platform is:
 
 **A secure operational command center for enterprise implementation teams.**
 
-The platform is NOT:
+The platform is NOT, by default:
 
-* A password manager
+* A password manager (an org may opt into Platform-Stored credential
+  storage — see §9.2 — but this remains off by default and is a deliberate
+  exception, not the product's positioning)
 * A CMDB replacement
 * A documentation platform
 * A ticketing system
@@ -128,7 +130,7 @@ Benefits:
 
 ## 4.3 Secrets Are External
 
-The platform does not become the owner of customer credentials.
+The platform does not become the owner of customer credentials, by default.
 
 The system stores:
 
@@ -137,6 +139,11 @@ The system stores:
 * Secret references
 
 The actual secret is stored in a supported secret management platform.
+
+**Exception:** an organization may explicitly opt into Platform-Stored mode
+(§9.2), where the platform does hold the encrypted secret value for
+credentials it's told to. This is a per-organization, opt-in departure from
+the default described above, not a change to it.
 
 ---
 
@@ -409,6 +416,39 @@ Supported providers:
 **Retention:** audit logs retained 12 months by default; environment/customer records retained for the life of the engagement plus a defined offboarding window (e.g. 90 days after contract end), then purged or archived per org policy.
 
 Because no production secrets or production access are ever stored, this reduces the compliance surface primarily to "how is non-prod operational data isolated and retained" — a materially easier conversation with client security teams than a credential-vaulting story would require.
+
+## 9.2 Storage Modes
+
+Every Credential record uses one of two storage modes, chosen explicitly
+per credential:
+
+**Reference (default).** The platform stores only a pointer — provider
+name and key/reference name. The actual secret value lives in the
+organization's own vault (Azure Key Vault, 1Password, etc.) and is never
+persisted in this platform's database. Retrieval, where supported (see
+§6/§9.1), fetches the value live from the org's vault, displays it once,
+and does not store a copy. This is the mode Sections 3, 4.3, and 9.1
+describe, and it remains the default for every organization and every
+credential unless explicitly changed.
+
+**Platform-Stored (opt-in).** An organization may explicitly enable this
+mode for its account. Once enabled, individual credentials may store the
+actual secret value directly in this platform, encrypted at rest. This is
+a deliberate departure from the "not a password manager" positioning in
+Section 3, offered for organizations who don't want the overhead of an
+external vault for low-stakes non-production credentials they're
+comfortable this platform holding.
+
+**What does not change between modes:** the Production-environment
+prohibition (Section 11) applies unconditionally to both. Non-production
+scope only, in both modes, with no exception.
+
+**What does change:** for Platform-Stored credentials, this platform is
+factually holding customer secret material, encrypted, in its own
+database. Organizations should understand this distinction before opting
+in — it is presented as a real tradeoff in the product UI, not a hidden
+default. See CLAUDE.md "Storage Modes & Encryption" for the technical
+implementation and the encryption-at-rest approach.
 
 ---
 
