@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "laravel-boost": {
+      "command": "/Users/idawoodjee/Library/Application Support/io.yerd.Yerd/php/php-8.5/bin/php",
+      "args": [
+        "/Users/idawoodjee/Herd/ifs-cmdb/artisan",
+        "boost:mcp"
+      ]
+    }
+  }
+}

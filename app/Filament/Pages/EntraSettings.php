@@ -23,12 +23,12 @@ class EntraSettings extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
-    protected static ?string $navigationLabel = 'Microsoft Entra ID';
+    protected static string|null $navigationLabel = 'Microsoft Entra ID';
 
     /**
      * @var array<string, mixed>|null
      */
-    public ?array $data = [];
+    public array|null $data = [];
 
     public static function canAccess(): bool
     {
@@ -62,7 +62,7 @@ class EntraSettings extends Page
                     Section::make('App registration')
                         ->description('Found in the Azure Portal under Entra ID → App registrations → your app.')
                         ->icon(Heroicon::OutlinedBuildingOffice2)
-                        ->columns(2)
+                        ->columns()
                         ->schema([
                             TextInput::make('azure_client_id')
                                 ->label('Client ID')
