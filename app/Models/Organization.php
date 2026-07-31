@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
  *
  * @mixin Builder
  */
-#[Fillable(['name', 'slug', 'azure_client_id', 'azure_client_secret', 'azure_tenant_id'])]
+#[Fillable(['name', 'slug', 'azure_client_id', 'azure_client_secret', 'azure_tenant_id', 'azure_key_vault_url'])]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */

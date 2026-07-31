@@ -34,3 +34,17 @@ it('defaults to no Entra config', function () {
         ->and($organization->fresh()->azure_client_secret)->toBeNull()
         ->and($organization->fresh()->azure_tenant_id)->toBeNull();
 });
+
+it('stores and retrieves the organization\'s Key Vault URL', function () {
+    $organization = Organization::factory()->create([
+        'azure_key_vault_url' => 'https://acme-vault.vault.azure.net',
+    ]);
+
+    expect($organization->fresh()->azure_key_vault_url)->toBe('https://acme-vault.vault.azure.net');
+});
+
+it('defaults to no Key Vault configured', function () {
+    $organization = Organization::factory()->create();
+
+    expect($organization->fresh()->azure_key_vault_url)->toBeNull();
+});

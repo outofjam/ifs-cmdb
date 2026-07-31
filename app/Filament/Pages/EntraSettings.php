@@ -23,12 +23,12 @@ class EntraSettings extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
-    protected static string|null $navigationLabel = 'Microsoft Entra ID';
+    protected static ?string $navigationLabel = 'Microsoft Entra ID';
 
     /**
      * @var array<string, mixed>|null
      */
-    public array|null $data = [];
+    public ?array $data = [];
 
     public static function canAccess(): bool
     {
@@ -51,6 +51,7 @@ class EntraSettings extends Page
             'azure_client_id',
             'azure_client_secret',
             'azure_tenant_id',
+            'azure_key_vault_url',
         ]));
     }
 
@@ -81,6 +82,17 @@ class EntraSettings extends Page
                                 ->revealable()
                                 ->columnSpanFull()
                                 ->helperText('From Certificates & secrets → Client secrets. Copy the secret\'s value, not its ID — it\'s only shown once. Stored encrypted.'),
+                        ]),
+                    Section::make('Key Vault')
+                        ->description('Lets credential references be verified against your vault. Grant this app\'s service principal an access policy or RBAC role on it in the Azure Portal.')
+                        ->icon(Heroicon::OutlinedLockClosed)
+                        ->schema([
+                            TextInput::make('azure_key_vault_url')
+                                ->label('Vault URL')
+                                ->url()
+                                ->prefixIcon(Heroicon::OutlinedGlobeAlt)
+                                ->helperText('The vault\'s "Vault URI" on its Overview page, e.g. https://acme-vault.vault.azure.net')
+                                ->placeholder('https://acme-vault.vault.azure.net'),
                         ]),
                 ])
                     ->livewireSubmitHandler('save')

@@ -16,6 +16,7 @@ it('lets an org admin save their Entra app config', function () {
             'azure_client_id' => 'client-123',
             'azure_client_secret' => 'super-secret-value',
             'azure_tenant_id' => 'tenant-456',
+            'azure_key_vault_url' => 'https://acme-vault.vault.azure.net',
         ])
         ->call('save')
         ->assertHasNoFormErrors();
@@ -24,7 +25,8 @@ it('lets an org admin save their Entra app config', function () {
 
     expect($fresh->azure_client_id)->toBe('client-123')
         ->and($fresh->azure_client_secret)->toBe('super-secret-value')
-        ->and($fresh->azure_tenant_id)->toBe('tenant-456');
+        ->and($fresh->azure_tenant_id)->toBe('tenant-456')
+        ->and($fresh->azure_key_vault_url)->toBe('https://acme-vault.vault.azure.net');
 });
 
 it('denies access to a non-admin role', function () {
