@@ -784,6 +784,17 @@ an org admin. Backlog — see CLAUDE.md "Organization Onboarding" for the fix
 direction (dedicated auth guard for the platform panel, decouple the
 platform-owner concept from needing an org at all).
 
+## Known Gap: no org-admin user management UI
+Team members provisioned via Microsoft/Entra login always start as
+`OrganizationRole::Viewer` (`App\Actions\Auth\ProvisionUserFromEntra`) — by
+design, so a new Microsoft sign-in never grants org-admin access on its own
+(covered by `tests/Unit/ProvisionUserFromEntraTest.php` and
+`tests/Feature/EntraSettingsTest.php`). But there's currently no UI for an
+org admin to see who's in their org or promote a Viewer/Consultant/Delivery
+Manager to `PlatformAdministrator` — role changes require a direct DB edit.
+Needed: a Filament resource (org-scoped, admin-only) listing the org's users
+with a role field editable by existing admins. Backlog — not built yet.
+
 ## Known Gap (Phase 2 prerequisite): revenue gate on org creation
 Org creation is currently fully open (self-serve signup, no approval step) —
 a deliberate choice for the pre-revenue, pre-public-launch stage this product
