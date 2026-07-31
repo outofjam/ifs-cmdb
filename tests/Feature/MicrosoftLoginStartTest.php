@@ -15,6 +15,13 @@ it('shows an email entry form', function () {
     $response->assertSee('name="email"', false);
 });
 
+it('loads the app stylesheet instead of rendering as bare unstyled HTML', function () {
+    $response = $this->get(route('auth.microsoft.start'));
+
+    $response->assertOk();
+    $response->assertSee('.css', false);
+});
+
 it('redirects to the org\'s own Entra app when one is configured', function () {
     $organization = Organization::factory()->create([
         'azure_client_id' => 'org-client-123',
