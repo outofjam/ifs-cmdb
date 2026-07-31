@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\EnvironmentType;
+use App\Models\AuditEvent;
 use App\Models\Credential;
 use App\Models\Customer;
 use App\Models\Environment;
@@ -18,6 +19,7 @@ dataset('tenant models', [
             'type' => EnvironmentType::Uat,
         ])->id,
     ])],
+    'AuditEvent' => [fn (Organization $organization) => AuditEvent::factory()->for($organization)->create()],
 ]);
 
 it('only returns records belonging to the authenticated user\'s organization', function (Closure $makeRecord) {
