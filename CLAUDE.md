@@ -1,6 +1,10 @@
 <laravel-boost-guidelines>
 === foundation rules ===
 
+# General
+- no CLI browser testing
+- all files and methods should be documented inline
+
 # Laravel Boost Guidelines
 
 The Laravel Boost guidelines are specifically curated by Laravel maintainers for this application. These guidelines should be followed closely to ensure the best experience when building Laravel applications.
@@ -217,26 +221,30 @@ Two distinct, non-conflicting paths — don't confuse them:
 
 **1. New orgs are created via self-serve signup, fully open, no gate (current
 stage — pre-revenue, pre-public launch; revisit when that changes).** Plain
-email/password registration (no Entra involved at signup) creates the
-`Organization`, an `ApprovedDomain` for the signer-upper's email domain, and
-the signing-up user as that org's admin (`OrganizationRole::PlatformAdministrator`).
-See docs/plans/04-self-serve-signup-and-platform-admin.md.
+email/password registration (no Entra involved at signup) always creates a
+brand-new `Organization` (name chosen by the signer-upper, an auto-generated
+unique `slug`) and the signing-up user as that org's admin
+(`OrganizationRole::PlatformAdministrator`). **Signup never joins an existing
+org, even when another org already has a user on the same email domain** —
+a self-reported domain string can't prove ownership, so it must never be
+trusted to grant access to data that already belongs to someone else. See
+docs/plans/04-self-serve-signup-and-platform-admin.md.
 
 **2. Once inside, the org admin can configure their own Entra app** (`Organization.azure_client_id`/`azure_client_secret`
 [encrypted]/`azure_tenant_id`, entered via a settings page) so their team can
-sign in with Microsoft through their *own* Azure AD app instead of a shared
-one. Team-member Microsoft login is a two-step redirect: enter work email →
-resolve org via `ApprovedDomain` → build the Socialite provider from that
-org's stored config if set, else fall back to the platform's shared app
-(`AZURE_TENANT_ID=organizations` in `.env`) → redirect to Microsoft.
-`ProvisionUserFromEntra` (unchanged) then attaches/creates the user via the
-same `ApprovedDomain` lookup at callback time.
-
-**No unapproved-domain rejection anymore for path 1** — that was a deliberate
-gate for a scenario (selling to strangers) that doesn't apply yet. Path 2's
-`OrganizationNotApprovedException` still fires for a domain with genuinely no
-org at all (nobody has signed up for it) — it's just no longer the mechanism
-that blocks *new org creation*, since that now happens via signup, not login.
+sign in with Microsoft through their *own* Azure AD app. **There is no shared
+platform-wide Entra app** — an org with no Entra config of its own simply
+can't use Microsoft sign-in until an admin sets it up (password login always
+works). Team-member Microsoft login is a two-step flow: (a) enter the org's
+`slug` → resolve `Organization::where('slug', ...)` → redirect to that org's
+own Entra app; (b) on callback, decode the returned access token's `tid`
+claim and verify it matches that org's stored `azure_tenant_id` before
+logging anyone in — this tenant-ID check is the actual security boundary,
+not the slug lookup (the slug is just a lookup key, no more trusted than the
+domain string it replaced). `ProvisionUserFromEntra` then attaches/creates
+the user under the already-verified org. See
+docs/plans/05-org-slug-entra-routing.md for why domain matching was rejected
+and full task-by-task detail.
 
 **Platform owner** (you — operates across all orgs, distinct from any
 `OrganizationRole`): `User.is_platform_owner`, separate Filament panel
@@ -253,10 +261,15 @@ be an org admin — fix direction: a dedicated auth guard for the `platform`
 panel (its own session), and likely decoupling the platform-owner concept
 from needing an `organization_id` at all. Not built — backlog, not urgent.
 
-See docs/plans/03-org-self-service-onboarding.md for the domain-allowlist
-mechanism (`ApprovedDomain`, still used, just no longer gates org creation)
-and docs/plans/04-self-serve-signup-and-platform-admin.md for the full
-current design.
+**Known backlog item — no org-admin user management UI:** Microsoft-provisioned
+team members always start as `OrganizationRole::Viewer` by design. There's no
+UI yet for an org admin to view their org's users or promote one to
+`PlatformAdministrator` — role changes require a direct DB edit.
+
+See docs/plans/03-org-self-service-onboarding.md (superseded, kept for
+history only — do not build anything from it) and
+docs/plans/04-self-serve-signup-and-platform-admin.md +
+docs/plans/05-org-slug-entra-routing.md for the full current design.
 
 ## Full product plan
 See docs/plan.md for complete spec.
@@ -269,12 +282,17 @@ See docs/plan.md for complete spec.
   admin panel
 - Customer Management complete (docs/plans/02-customer-management.md): Customer
   model + Filament resource, org-scoped, owner assignment
-- Organization onboarding + platform admin complete (docs/plans/03 and 04): open
-  self-serve signup (password-based, no gate — pre-revenue stage), per-org Entra
-  app config with two-step Microsoft login (org's own app if configured, else the
-  shared platform app), `/platform` panel for the platform owner — see
+- Organization onboarding + platform admin complete (docs/plans/04 and 05, 03
+  superseded): open self-serve signup (password-based, no gate — pre-revenue
+  stage, always creates its own new org), per-org Entra app config with
+  slug-based two-step Microsoft login + callback-time tenant-ID verification
+  (no shared platform app), `/platform` panel for the platform owner — see
   "Organization Onboarding" above
-- Next: Environment Registry (docs/plan.md §17.4)
+- Environment Registry complete (docs/plan.md §7/MVP §4): Environment model
+  + Filament resource, org-scoped, required Customer link, `EnvironmentType`
+  enum
+- Next: Credential Inventory (docs/plan.md §5/§8) — remember the
+  Production-environment guard noted in §8's implementation note
 
 ## TDD — Non-Negotiable Workflow
 

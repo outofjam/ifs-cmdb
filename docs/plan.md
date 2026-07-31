@@ -803,17 +803,33 @@ either an approval/invite step before a signup becomes a live org, or a
 billing/trial step. Revisit explicitly when that stage arrives — don't let it
 drift by default. See CLAUDE.md "Organization Onboarding".
 
+## Resolved: signup auto-joining an existing org via shared email domain
+Password signup used to attach a new signer to an *existing* org if another
+org already had a user on the same email domain (e.g. a `gmail.com` org
+created first would silently absorb every later `gmail.com` signup as a
+Viewer — no invite, no approval). A domain string proves nothing; anyone can
+register unlimited addresses on a shared/personal domain. Fixed: every
+password signup now always creates its own brand-new org, full stop — see
+CLAUDE.md "Organization Onboarding" path 1 and
+docs/plans/04-self-serve-signup-and-platform-admin.md Task 3.
+
 ## Resolved: organization onboarding & platform admin
 
 See CLAUDE.md "Organization Onboarding" for the authoritative current
-description, and docs/plans/03-org-self-service-onboarding.md (domain
-allowlist mechanism) + docs/plans/04-self-serve-signup-and-platform-admin.md
-(signup, per-org Entra config, platform panel) for the full design history.
+description; docs/plans/03-org-self-service-onboarding.md is superseded
+(kept for history only) by docs/plans/04-self-serve-signup-and-platform-admin.md
+(signup, per-org Entra config, platform panel) and
+docs/plans/05-org-slug-entra-routing.md (slug-based org lookup +
+tenant-ID verification, replacing the original domain-matching design).
 
 Summary: new orgs are created via open self-serve signup (plain
-email/password, no Entra), not by an unrecognized domain hitting Entra
-login. Each org can configure its own Entra app registration for its team's
-Microsoft login (falling back to one shared platform app if they haven't).
-You (the platform owner) operate through a separate `/platform` Filament
-panel — a distinct concept from `OrganizationRole::PlatformAdministrator`,
+email/password, no Entra), each always its own new org. Each org can
+configure its own Entra app registration for its team's Microsoft login —
+there is no shared platform-wide app; an org without its own Entra config
+simply can't use Microsoft sign-in (password still works). Team-member
+Microsoft login resolves the org by a self-reported `slug` and then verifies
+the callback's Entra tenant ID actually matches that org before logging
+anyone in — the tenant-ID check is the real security boundary, not the
+lookup key. You (the platform owner) operate through a separate `/platform`
+Filament panel — a distinct concept from `OrganizationRole::PlatformAdministrator`,
 which is scoped to one org (an org's own admin), not you.
