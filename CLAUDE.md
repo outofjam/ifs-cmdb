@@ -291,8 +291,14 @@ See docs/plan.md for complete spec.
 - Environment Registry complete (docs/plan.md §7/MVP §4): Environment model
   + Filament resource, org-scoped, required Customer link, `EnvironmentType`
   enum
-- Next: Credential Inventory (docs/plan.md §5/§8) — remember the
-  Production-environment guard noted in §8's implementation note
+- Credential Inventory complete (docs/plans/06-credential-inventory.md,
+  docs/plan.md §5/§8): Credential model + Filament resource, org-scoped,
+  required Environment link, `SecretProvider` enum, Production-environment
+  guard enforced at both the Filament picker (query-scoped out) and the
+  model (`creating`/`saving` throws `CredentialTargetsProductionEnvironmentException`).
+  First two secret-storage arch tests added (`tests/Arch/SecretStorageArchTest.php`)
+- Next: First Secret Provider (docs/plan.md §6) — real Azure Key Vault
+  integration, out of scope for the Credential Inventory plan
 
 ## TDD — Non-Negotiable Workflow
 
