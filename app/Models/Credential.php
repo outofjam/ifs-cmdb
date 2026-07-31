@@ -6,6 +6,7 @@ use App\Enums\EnvironmentType;
 use App\Enums\SecretProvider;
 use App\Enums\VerificationStatus;
 use App\Exceptions\CredentialTargetsProductionEnvironmentException;
+use App\Models\Concerns\BelongsToAuditableOrganization;
 use App\Models\Concerns\BelongsToOrganization;
 use App\Models\Scopes\OrganizationScope;
 use Database\Factories\CredentialFactory;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * A reference to a secret held in an external vault -- never the secret
@@ -26,10 +29,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @mixin Builder
  */
 #[Fillable(['environment_id', 'owner_id', 'name', 'purpose', 'username', 'secret_provider', 'secret_reference', 'expiration_date', 'last_verified_at', 'verification_status', 'last_retrieved_at', 'last_retrieved_by'])]
-class Credential extends Model
+class Credential extends Model implements AuditableContract
 {
     /** @use HasFactory<CredentialFactory> */
-    use BelongsToOrganization, HasFactory, HasUuids;
+    use Auditable, BelongsToAuditableOrganization, BelongsToOrganization, HasFactory, HasUuids {
+        BelongsToAuditableOrganization::transformAudit insteadof Auditable;
+    }
 
     /**
      * Rejects saving a Credential against a Production environment,

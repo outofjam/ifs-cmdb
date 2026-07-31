@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\EnvironmentType;
+use App\Models\Concerns\BelongsToAuditableOrganization;
 use App\Models\Concerns\BelongsToOrganization;
 use Database\Factories\EnvironmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use OwenIt\Auditing\Auditable;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 /**
  * @method static Environment|static create(array $attributes = [])
@@ -20,10 +23,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @mixin Builder
  */
 #[Fillable(['customer_id', 'owner_id', 'name', 'type', 'url', 'ifs_release', 'build_number', 'notes'])]
-class Environment extends Model
+class Environment extends Model implements AuditableContract
 {
     /** @use HasFactory<EnvironmentFactory> */
-    use BelongsToOrganization, HasFactory, HasUuids;
+    use Auditable, BelongsToAuditableOrganization, BelongsToOrganization, HasFactory, HasUuids {
+        BelongsToAuditableOrganization::transformAudit insteadof Auditable;
+    }
 
     protected function casts(): array
     {
