@@ -4,6 +4,7 @@
 # General
 - no CLI browser testing
 - all files and methods should be documented inline
+- no emdashes in any text
 
 # Laravel Boost Guidelines
 
@@ -297,8 +298,17 @@ See docs/plan.md for complete spec.
   guard enforced at both the Filament picker (query-scoped out) and the
   model (`creating`/`saving` throws `CredentialTargetsProductionEnvironmentException`).
   First two secret-storage arch tests added (`tests/Arch/SecretStorageArchTest.php`)
-- Next: First Secret Provider (docs/plan.md §6) — real Azure Key Vault
-  integration, out of scope for the Credential Inventory plan
+- First Secret Provider complete (docs/plans/07-first-secret-provider.md,
+  docs/plan.md §6): real Azure Key Vault integration, two independent
+  Credential actions — `verifyAction()` (existence-check only, `/versions`
+  endpoint) and `revealAction()` (fetches and displays the real value,
+  audit-logged) — see "Storage Modes & Encryption" above for the full
+  invariant. Minimal `AuditEvent` model added as a prerequisite (Foundation
+  never built one).
+- Next: Environment Notes (docs/plan.md §7) — free-text purpose/config-notes/
+  known-issues/troubleshooting fields on `Environment`. (Platform-Stored
+  credentials, docs/plans/08, remain separate future work requiring the
+  full review process — not next up by default.)
 
 ## TDD — Non-Negotiable Workflow
 
@@ -336,18 +346,83 @@ No new tenant-scoped model is complete until this test exists and is green.
 
 ## Arch Tests — Secret Storage Invariants (Section 9.1/11)
 
+**Unconditional except one allowlisted exception** — see "Storage Modes &
+Encryption" below. `credentials.secret_value_encrypted` is the one and only
+column anywhere in the schema permitted to hold derivable secret material,
+gated by an org's explicit `PlatformStored` opt-in. Everything below applies
+without exception to every other column, table, and class.
+
 The following must be enforced by `pestphp/pest-plugin-arch`, not just code review:
 
 - No model, migration, or table may contain a column that stores a raw secret
   value (password, API key, token, etc.). Only `secret_provider` and
-  `secret_reference` (pointer to an external vault) are permitted.
+  `secret_reference` (pointer to an external vault) are permitted — plus the
+  single allowlisted `secret_value_encrypted` column noted above.
 - No `Credential` (or related) migration may add columns to environments of
   type `production`. Credential records are non-prod only — enforce at the
   model/policy layer, not just documentation.
 - No class may expose a method that returns a decrypted/raw secret value
   (e.g. `getSecretValue()`, `decryptPassword()`). If such a method appears,
-  it's a violation, not a feature.
+  it's a violation, not a feature — except the deliberate, audited Reveal
+  actions described below, which exist specifically to do this under
+  controlled conditions.
 
 Add/extend these arch tests whenever a new model touches credentials or
 environments. If you're unsure whether a column violates this, don't add it —
 ask first.
+
+## Storage Modes & Encryption
+
+Credentials support two storage modes (`App\Enums\CredentialStorageMode`):
+`Reference` (default) and `PlatformStored` (opt-in, per-organization via
+`organizations.allows_platform_stored_credentials`).
+
+**Reference mode invariant (unchanged, non-negotiable):** the platform
+never persists a secret value. Retrieval fetches live from the org's own
+vault, per request, and displays once. Nothing is written to our database,
+logs, or any persisted Livewire/session state beyond a single render.
+
+**PlatformStored mode invariant:** the platform does persist a secret
+value, in `credentials.secret_value_encrypted`, using [encryption approach
+decided in docs/plans/08 Task 2 — fill in once decided: e.g. envelope
+encryption via a dedicated KMS, per-organization data encryption key
+wrapped by a platform master key, etc.]. This is the one and only column
+anywhere in the schema permitted to hold derivable secret material — the
+arch test in `tests/Arch/` allowlists exactly this column and nothing
+else. Any other column shaped like a raw secret (password, api_key, token,
+etc.) remains a violation regardless of storage mode.
+
+**Reference mode is built** (docs/plans/07): `App\Contracts\RetrievesSecretValue`
+port, `App\Services\AzureKeyVault\AzureKeyVaultSecretRetriever` adapter
+(client-credentials token against the org's own Entra app, then Key Vault's
+plain "get secret" endpoint — the one call in the codebase allowed to
+receive a real value), resolved via `SecretProviderRetrieverResolver`.
+`CredentialResource::revealAction()` is the only caller: manual trigger,
+confirmation modal, the value goes straight into a one-shot Filament
+notification body (never assigned to a persisted Livewire property, never
+logged — failure paths only ever log status codes), and records
+`last_retrieved_at`/`last_retrieved_by` plus an `AuditEvent`. A separate,
+lower-stakes `verifyAction()` (existence-check only, via the `/versions`
+endpoint, never touches the value) coexists alongside it — the two are
+deliberately independent actions, not a replacement of one by the other.
+**PlatformStored mode is not built yet** — docs/plans/08, pending the Task 2
+encryption-approach decision, full review process required (see that plan's
+own "Execution" note).
+
+**Both modes share:**
+- The Production-environment guard on `Credential` (blocks attachment to
+  any environment where `type === Production`, regardless of storage mode).
+- Reveal/retrieval discipline: manual trigger only (never automatic on
+  page load), dismissible/copy-only display, never rendered in a table or
+  list view, cleared after one render, never logged.
+- Per-reveal audit logging: every successful value retrieval — Reference
+  or PlatformStored — creates an `AuditEvent` (user, credential,
+  environment, timestamp). This is access to a real secret value, logged
+  as the higher-stakes event it is, distinct from a reference-only view.
+
+**Do not weaken either invariant while adding a new provider or a new
+storage mode later.** If a future change would touch the arch test
+allowlist, the Production guard, or the reveal-discipline pattern, treat it
+with the same review rigor as the original Foundation-phase `OrganizationScope`
+work (full review loop, not direct-TDD) — these are the platform's core
+compliance guarantees, not routine CRUD.
