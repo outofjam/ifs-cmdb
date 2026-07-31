@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\EnvironmentType;
+use App\Models\Credential;
 use App\Models\Customer;
 use App\Models\Environment;
 use App\Models\Organization;
@@ -35,4 +36,20 @@ it('can create an environment with a customer, owner, type, and notes', function
         ->and($environment->ifs_release)->toBe('24R2')
         ->and($environment->build_number)->toBe('4821')
         ->and($environment->notes)->toBe('Refreshed monthly from production.');
+});
+
+it('has many credentials', function () {
+    $organization = Organization::factory()->create();
+    $customer = Customer::factory()->for($organization)->create();
+    $owner = User::factory()->for($organization)->create();
+    $this->actingAs($owner);
+
+    $environment = Environment::factory()->for($organization)->create([
+        'customer_id' => $customer->id,
+        'type' => EnvironmentType::Uat,
+    ]);
+    $credential = Credential::factory()->for($organization)->create(['environment_id' => $environment->id]);
+
+    expect($environment->credentials)->toHaveCount(1)
+        ->and($environment->credentials->first()->is($credential))->toBeTrue();
 });

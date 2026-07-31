@@ -6,6 +6,7 @@ use App\Filament\Resources\Environments\Pages\CreateEnvironment;
 use App\Filament\Resources\Environments\Pages\EditEnvironment;
 use App\Filament\Resources\Environments\Pages\ListEnvironments;
 use App\Filament\Resources\Environments\Pages\ViewEnvironment;
+use App\Filament\Resources\Environments\RelationManagers\CredentialsRelationManager;
 use App\Filament\Resources\Environments\Schemas\EnvironmentForm;
 use App\Filament\Resources\Environments\Schemas\EnvironmentInfolist;
 use App\Filament\Resources\Environments\Tables\EnvironmentsTable;
@@ -40,7 +41,7 @@ class EnvironmentResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            CredentialsRelationManager::class,
         ];
     }
 
