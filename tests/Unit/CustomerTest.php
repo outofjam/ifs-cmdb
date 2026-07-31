@@ -24,34 +24,5 @@ it('can create a customer with an owner and notes', function () {
         ->and($customer->organization->is($organization))->toBeTrue();
 });
 
-it('only returns customers belonging to the authenticated user\'s organization', function () {
-    $orgA = Organization::factory()->create();
-    $orgB = Organization::factory()->create();
-    $userA = User::factory()->for($orgA)->create();
-
-    $customerA = Customer::factory()->for($orgA)->create();
-    Customer::factory()->for($orgB)->create();
-
-    $this->actingAs($userA);
-
-    expect(Customer::query()->pluck('id'))->toEqual(collect([$customerA->id]));
-});
-
-it('cannot read another organization\'s customer by guessing its id', function () {
-    $orgA = Organization::factory()->create();
-    $orgB = Organization::factory()->create();
-    $userA = User::factory()->for($orgA)->create();
-
-    $customerB = Customer::factory()->for($orgB)->create();
-
-    $this->actingAs($userA);
-
-    expect(Customer::find($customerB->id))->toBeNull();
-});
-
-it('returns no customers when there is no authenticated user', function () {
-    $organization = Organization::factory()->create();
-    Customer::factory()->for($organization)->create();
-
-    expect(Customer::query()->count())->toBe(0);
-});
+// Cross-org isolation is covered for all tenant models in
+// tests/Unit/OrganizationScopeIsolationTest.php.

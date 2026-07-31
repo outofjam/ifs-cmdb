@@ -304,6 +304,14 @@ Store:
 
 The platform manages access workflows, not ownership of secrets, and covers non-production environments only. See Section 11.
 
+**Implementation note for when this section is built:** `Credential` must
+refuse to attach to any `Environment` whose `type` is
+`EnvironmentType::Production` (enforce at the model/policy layer — a
+`creating`/`saving` guard or a form-level filter on the environment picker —
+not just this doc). Already required as an arch-test invariant in CLAUDE.md
+("Arch Tests — Secret Storage Invariants"); flagged here again so the
+Credential implementation plan doesn't miss it.
+
 ---
 
 ## Credential Records
