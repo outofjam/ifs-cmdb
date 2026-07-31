@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\EnvironmentType;
 use App\Enums\SecretProvider;
+use App\Enums\VerificationStatus;
 use App\Exceptions\CredentialTargetsProductionEnvironmentException;
 use App\Models\Concerns\BelongsToOrganization;
 use App\Models\Scopes\OrganizationScope;
@@ -24,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @mixin Builder
  */
-#[Fillable(['environment_id', 'owner_id', 'name', 'purpose', 'username', 'secret_provider', 'secret_reference', 'expiration_date'])]
+#[Fillable(['environment_id', 'owner_id', 'name', 'purpose', 'username', 'secret_provider', 'secret_reference', 'expiration_date', 'last_verified_at', 'verification_status', 'last_retrieved_at', 'last_retrieved_by'])]
 class Credential extends Model
 {
     /** @use HasFactory<CredentialFactory> */
@@ -54,6 +55,9 @@ class Credential extends Model
         return [
             'secret_provider' => SecretProvider::class,
             'expiration_date' => 'date',
+            'last_verified_at' => 'datetime',
+            'verification_status' => VerificationStatus::class,
+            'last_retrieved_at' => 'datetime',
         ];
     }
 
@@ -79,5 +83,13 @@ class Credential extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function lastRetrievedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'last_retrieved_by');
     }
 }

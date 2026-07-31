@@ -2,12 +2,14 @@
 
 use App\Enums\EnvironmentType;
 use App\Enums\SecretProvider;
+use App\Enums\VerificationStatus;
 use App\Exceptions\CredentialTargetsProductionEnvironmentException;
 use App\Models\Credential;
 use App\Models\Customer;
 use App\Models\Environment;
 use App\Models\Organization;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 
 it('can create a credential with an environment, provider, and owner', function () {
     $organization = Organization::factory()->create();
@@ -76,3 +78,37 @@ it('allows a credential against any non-production environment type', function (
     EnvironmentType::Demo,
     EnvironmentType::Integration,
 ]);
+
+it('casts verification_status and last_verified_at', function () {
+    $organization = Organization::factory()->create();
+
+    $credential = Credential::factory()->for($organization)->create([
+        'verification_status' => VerificationStatus::Verified,
+        'last_verified_at' => now(),
+    ]);
+
+    expect($credential->fresh()->verification_status)->toBe(VerificationStatus::Verified)
+        ->and($credential->fresh()->last_verified_at)->toBeInstanceOf(Carbon::class);
+});
+
+it('defaults to no verification recorded', function () {
+    $organization = Organization::factory()->create();
+
+    $credential = Credential::factory()->for($organization)->create();
+
+    expect($credential->fresh()->verification_status)->toBeNull()
+        ->and($credential->fresh()->last_verified_at)->toBeNull();
+});
+
+it('casts last_retrieved_at and records who retrieved it', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+
+    $credential = Credential::factory()->for($organization)->create([
+        'last_retrieved_at' => now(),
+        'last_retrieved_by' => $user->id,
+    ]);
+
+    expect($credential->fresh()->last_retrieved_at)->toBeInstanceOf(Carbon::class)
+        ->and($credential->fresh()->last_retrieved_by)->toBe($user->id);
+});
