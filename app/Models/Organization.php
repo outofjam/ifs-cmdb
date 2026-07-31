@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 /**
  * @method static Organization|static create(array $attributes = [])
@@ -16,11 +17,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * @mixin Builder
  */
-#[Fillable(['name', 'azure_client_id', 'azure_client_secret', 'azure_tenant_id'])]
+#[Fillable(['name', 'slug', 'azure_client_id', 'azure_client_secret', 'azure_tenant_id'])]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
     use HasFactory, HasUuids;
+
+    /**
+     * Auto-generates a unique slug from the name when one isn't given.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Organization $organization): void {
+            if (blank($organization->slug)) {
+                $organization->slug = static::generateUniqueSlug($organization->name);
+            }
+        });
+    }
 
     /**
      * @return HasMany<User, $this>
@@ -38,5 +51,22 @@ class Organization extends Model
         return [
             'azure_client_secret' => 'encrypted',
         ];
+    }
+
+    /**
+     * Slugifies the given name, appending a numeric suffix on collision.
+     */
+    protected static function generateUniqueSlug(string $name): string
+    {
+        $base = Str::slug($name) ?: 'organization';
+        $slug = $base;
+        $suffix = 2;
+
+        while (static::query()->where('slug', $slug)->exists()) {
+            $slug = "{$base}-{$suffix}";
+            $suffix++;
+        }
+
+        return $slug;
     }
 }
