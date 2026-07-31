@@ -13,6 +13,8 @@ class ViewCredential extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            CredentialResource::verifyAction(),
+            CredentialResource::revealAction(),
             EditAction::make(),
         ];
     }

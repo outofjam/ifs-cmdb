@@ -14,6 +14,7 @@ class EditCredential extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            CredentialResource::verifyAction(),
             ViewAction::make(),
             DeleteAction::make(),
         ];
