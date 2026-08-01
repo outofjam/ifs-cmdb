@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\EnvironmentType;
 use App\Filament\Resources\Customers\Pages\CreateCustomer;
 use App\Filament\Resources\Customers\Pages\ListCustomers;
 use App\Models\Customer;
+use App\Models\Environment;
 use App\Models\Organization;
 use App\Models\User;
 use Livewire\Livewire;
@@ -51,4 +53,19 @@ it('creates a customer with an owner and notes through the form', function () {
     expect($customer->organization_id)->toBe($organization->id)
         ->and($customer->owner_id)->toBe($owner->id)
         ->and($customer->notes)->toBe('Referred by Acme.');
+});
+
+it('shows the number of environments belonging to each customer', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    $customer = Customer::factory()->for($organization)->create();
+    Environment::factory()->for($organization)->count(2)->create([
+        'customer_id' => $customer->id,
+        'type' => EnvironmentType::Uat,
+    ]);
+
+    Livewire::test(ListCustomers::class)
+        ->assertTableColumnStateSet('environments_count', 2, record: $customer);
 });

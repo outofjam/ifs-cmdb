@@ -34,6 +34,10 @@ class EnvironmentsTable
                     ->label('Release')
                     ->placeholder('Unknown')
                     ->toggleable(),
+                TextColumn::make('credentials_count')
+                    ->label('Credentials')
+                    ->counts('credentials')
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

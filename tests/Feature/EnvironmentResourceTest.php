@@ -4,6 +4,7 @@ use App\Enums\EnvironmentType;
 use App\Filament\Resources\Environments\Pages\CreateEnvironment;
 use App\Filament\Resources\Environments\Pages\ListEnvironments;
 use App\Filament\Resources\Environments\Pages\ViewEnvironment;
+use App\Models\Credential;
 use App\Models\Customer;
 use App\Models\Environment;
 use App\Models\Organization;
@@ -136,4 +137,22 @@ it('shows the environment knowledge section when only one field has been recorde
         ->assertSee('Environment knowledge')
         ->assertSee('Used for regression testing before each release.')
         ->assertSee('None recorded');
+});
+
+it('shows the number of credentials belonging to each environment', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    $customer = Customer::factory()->for($organization)->create();
+    $environment = Environment::factory()->for($organization)->create([
+        'customer_id' => $customer->id,
+        'type' => EnvironmentType::Uat,
+    ]);
+    Credential::factory()->for($organization)->count(2)->create([
+        'environment_id' => $environment->id,
+    ]);
+
+    Livewire::test(ListEnvironments::class)
+        ->assertTableColumnStateSet('credentials_count', 2, record: $environment);
 });

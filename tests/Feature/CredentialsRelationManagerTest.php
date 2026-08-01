@@ -167,3 +167,26 @@ it('shows the new owner\'s name instead of a raw UUID in the audit history modal
         ->assertMountedActionModalSee('Ada Lovelace')
         ->assertMountedActionModalDontSee($owner->id);
 });
+
+it('shows when a credential was last verified', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    $customer = Customer::factory()->for($organization)->create();
+    $environment = Environment::factory()->for($organization)->create([
+        'customer_id' => $customer->id,
+        'type' => EnvironmentType::Uat,
+    ]);
+    $credential = Credential::factory()->for($organization)->create([
+        'environment_id' => $environment->id,
+        'last_verified_at' => now()->subDay(),
+    ]);
+
+    Livewire::test(CredentialsRelationManager::class, [
+        'ownerRecord' => $environment,
+        'pageClass' => ViewEnvironment::class,
+    ])
+        ->assertTableColumnExists('last_verified_at')
+        ->assertSee('1 day ago');
+});

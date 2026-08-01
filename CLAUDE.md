@@ -405,16 +405,27 @@ See docs/plan.md for complete spec.
   above for `App\Filament\Resources\Users\UserResource` details. Closes the
   backlog item where role changes required a direct DB edit.
 - Customer now has an `EnvironmentsRelationManager`
-  (`App\Filament\Resources\Customers\RelationManagers`): full CRUD (create/
-  edit/delete/view) on that customer's environments from the customer's own
-  page, not just the top-level Environments list. Deliberately does *not*
-  reuse `EnvironmentForm`/`EnvironmentInfolist` -- those include a
-  `customer_id` picker, which would be redundant here (the customer is
-  already the page context) and risks a mismatch between what's picked in
-  the form and what the `environments` relationship actually sets on
-  create. The relation manager's own form/infolist mirror those classes'
-  other sections (General information, Application metadata, Environment
-  knowledge) with that one field removed instead.
+  (`App\Filament\Resources\Customers\RelationManagers`): create/edit/delete
+  on that customer's environments from the customer's own page, not just
+  the top-level Environments list. **View and Edit navigate to
+  `EnvironmentResource`'s own view/edit pages instead of opening a modal**
+  (`->url(fn ($record) => EnvironmentResource::getUrl(...))` on
+  `ViewAction`/`EditAction`) -- those pages have Credentials and Audit
+  history tabs a modal can't show. Create stays inline (nothing to link to
+  until the record exists) and deliberately does *not* reuse
+  `EnvironmentForm` -- that includes a `customer_id` picker, which would be
+  redundant here (the customer is already the page context) and risks a
+  mismatch between what's picked in the form and what the `environments`
+  relationship actually sets on create. The relation manager's own form
+  mirrors that class's other sections (General information, Application
+  metadata, Environment knowledge) with that one field removed instead. No
+  `infolist()` method needed anymore since View no longer opens a modal.
+- Relationship counts added where they were missing: Customers list shows
+  `environments_count`, Environments list (and the Customer's
+  `EnvironmentsRelationManager`) shows `credentials_count`, both via
+  Filament's `->counts('relation')` on a `TextColumn::make('{relation}_count')`.
+  Credentials table also now shows `last_verified_at` (`->since()`,
+  already tracked by `verifyAction()`, just wasn't displayed before).
 
 ## TDD — Non-Negotiable Workflow
 

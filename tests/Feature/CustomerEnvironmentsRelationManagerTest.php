@@ -4,6 +4,8 @@ use App\Enums\EnvironmentType;
 use App\Filament\Resources\Customers\Pages\EditCustomer;
 use App\Filament\Resources\Customers\Pages\ViewCustomer;
 use App\Filament\Resources\Customers\RelationManagers\EnvironmentsRelationManager;
+use App\Filament\Resources\Environments\EnvironmentResource;
+use App\Models\Credential;
 use App\Models\Customer;
 use App\Models\Environment;
 use App\Models\Organization;
@@ -12,6 +14,7 @@ use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\Testing\TestAction;
+use Filament\Actions\ViewAction;
 use Livewire\Livewire;
 
 it('lists environments belonging to the customer', function () {
@@ -76,7 +79,7 @@ it('creates an environment for this customer without needing to pick a customer'
         ->and($environment->customer_id)->toBe($customer->id);
 });
 
-it('edits an environment through the relation manager', function () {
+it('links View to the environment\'s own page instead of opening a modal', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->for($organization)->create();
     $this->actingAs($user);
@@ -84,21 +87,38 @@ it('edits an environment through the relation manager', function () {
     $customer = Customer::factory()->for($organization)->create();
     $environment = Environment::factory()->for($organization)->create([
         'customer_id' => $customer->id,
-        'name' => 'Original name',
         'type' => EnvironmentType::Uat,
     ]);
 
     Livewire::test(EnvironmentsRelationManager::class, [
         'ownerRecord' => $customer,
-        'pageClass' => EditCustomer::class,
+        'pageClass' => ViewCustomer::class,
     ])
-        ->callAction(TestAction::make(EditAction::class)->table($environment), [
-            'name' => 'Renamed environment',
-        ])
-        ->assertHasNoActionErrors();
+        ->assertActionHasUrl(
+            TestAction::make(ViewAction::class)->table($environment),
+            EnvironmentResource::getUrl('view', ['record' => $environment]),
+        );
+});
 
-    expect($environment->fresh()->name)->toBe('Renamed environment')
-        ->and($environment->fresh()->customer_id)->toBe($customer->id);
+it('links Edit to the environment\'s own page instead of opening a modal', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    $customer = Customer::factory()->for($organization)->create();
+    $environment = Environment::factory()->for($organization)->create([
+        'customer_id' => $customer->id,
+        'type' => EnvironmentType::Uat,
+    ]);
+
+    Livewire::test(EnvironmentsRelationManager::class, [
+        'ownerRecord' => $customer,
+        'pageClass' => ViewCustomer::class,
+    ])
+        ->assertActionHasUrl(
+            TestAction::make(EditAction::class)->table($environment),
+            EnvironmentResource::getUrl('edit', ['record' => $environment]),
+        );
 });
 
 it('deletes an environment through the relation manager', function () {
@@ -118,4 +138,25 @@ it('deletes an environment through the relation manager', function () {
         ->callAction(TestAction::make(DeleteAction::class)->table($environment));
 
     expect(Environment::query()->find($environment->id))->toBeNull();
+});
+
+it('shows the number of credentials belonging to each environment', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    $customer = Customer::factory()->for($organization)->create();
+    $environment = Environment::factory()->for($organization)->create([
+        'customer_id' => $customer->id,
+        'type' => EnvironmentType::Uat,
+    ]);
+    Credential::factory()->for($organization)->count(2)->create([
+        'environment_id' => $environment->id,
+    ]);
+
+    Livewire::test(EnvironmentsRelationManager::class, [
+        'ownerRecord' => $customer,
+        'pageClass' => ViewCustomer::class,
+    ])
+        ->assertTableColumnStateSet('credentials_count', 2, record: $environment);
 });

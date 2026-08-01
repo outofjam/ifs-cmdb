@@ -21,6 +21,10 @@ class CustomersTable
                 TextColumn::make('owner.name')
                     ->label('Owner')
                     ->placeholder('Unassigned'),
+                TextColumn::make('environments_count')
+                    ->label('Environments')
+                    ->counts('environments')
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Customers\RelationManagers;
 
 use App\Enums\EnvironmentType;
+use App\Filament\Resources\Environments\EnvironmentResource;
+use App\Models\Environment;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -10,7 +12,6 @@ use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -20,8 +21,11 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 /**
- * A customer's environments, browsable and fully manageable from the
- * customer's own page -- mirrors EnvironmentForm/EnvironmentInfolist's
+ * A customer's environments, browsable and manageable from the customer's
+ * own page. View and Edit navigate to Environment's own resource pages
+ * instead of opening a modal here -- those pages have Credentials and
+ * Audit history tabs a modal can't show. Create stays inline (there's
+ * nothing to link to until the record exists) and mirrors EnvironmentForm's
  * sections, minus the Customer field itself (implicit from context here,
  * and set automatically via the `environments` relationship on create --
  * never offered as a pickable field, which would let a record wander to a
@@ -100,53 +104,6 @@ class EnvironmentsRelationManager extends RelationManager
             ]);
     }
 
-    public function infolist(Schema $schema): Schema
-    {
-        return $schema
-            ->components([
-                TextEntry::make('name')
-                    ->icon(Heroicon::OutlinedTag),
-                TextEntry::make('type')
-                    ->badge(),
-                TextEntry::make('url')
-                    ->label('URL')
-                    ->icon(Heroicon::OutlinedLink)
-                    ->url(fn (?string $state): ?string => $state)
-                    ->openUrlInNewTab()
-                    ->copyable()
-                    ->placeholder('Not set'),
-                TextEntry::make('owner.name')
-                    ->label('Owner')
-                    ->icon(Heroicon::OutlinedUserCircle)
-                    ->placeholder('Unassigned'),
-                TextEntry::make('ifs_release')
-                    ->label('Release')
-                    ->placeholder('Unknown'),
-                TextEntry::make('build_number')
-                    ->label('Build number')
-                    ->placeholder('Unknown'),
-                TextEntry::make('purpose')
-                    ->placeholder('Not set')
-                    ->columnSpanFull(),
-                TextEntry::make('configuration_notes')
-                    ->label('Configuration notes')
-                    ->placeholder('Not set')
-                    ->columnSpanFull(),
-                TextEntry::make('known_issues')
-                    ->label('Known issues')
-                    ->placeholder('None recorded')
-                    ->columnSpanFull(),
-                TextEntry::make('troubleshooting_notes')
-                    ->label('Troubleshooting information')
-                    ->placeholder('Not set')
-                    ->columnSpanFull(),
-                TextEntry::make('customer_procedures')
-                    ->label('Customer-specific procedures')
-                    ->placeholder('Not set')
-                    ->columnSpanFull(),
-            ]);
-    }
-
     public function table(Table $table): Table
     {
         return $table
@@ -165,6 +122,10 @@ class EnvironmentsRelationManager extends RelationManager
                     ->label('Release')
                     ->placeholder('Unknown')
                     ->toggleable(),
+                TextColumn::make('credentials_count')
+                    ->label('Credentials')
+                    ->counts('credentials')
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -178,8 +139,10 @@ class EnvironmentsRelationManager extends RelationManager
                 CreateAction::make(),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()
+                    ->url(fn (Environment $record): string => EnvironmentResource::getUrl('view', ['record' => $record])),
+                EditAction::make()
+                    ->url(fn (Environment $record): string => EnvironmentResource::getUrl('edit', ['record' => $record])),
                 DeleteAction::make(),
             ]);
     }

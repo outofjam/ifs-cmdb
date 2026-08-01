@@ -145,6 +145,12 @@ class CredentialsRelationManager extends RelationManager
                     ->placeholder('None')
                     ->sortable()
                     ->color(fn (?Carbon $state): ?string => $state?->isPast() ? 'danger' : null),
+                TextColumn::make('last_verified_at')
+                    ->label('Last verified')
+                    ->since()
+                    ->placeholder('Never')
+                    ->sortable()
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('secret_provider')
