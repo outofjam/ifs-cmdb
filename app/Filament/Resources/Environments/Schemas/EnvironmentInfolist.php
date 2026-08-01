@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Environments\Schemas;
 
+use App\Models\Environment;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -53,6 +54,16 @@ class EnvironmentInfolist
                 Section::make('Environment knowledge')
                     ->description('Context for anyone picking this environment up cold -- what it\'s for, how it\'s configured, and what tends to go wrong.')
                     ->icon(Heroicon::OutlinedLightBulb)
+                    ->columnSpanFull()
+                    // Hidden entirely when every field is empty -- a freshly
+                    // created environment otherwise shows five "Not set" rows,
+                    // which is just noise. Shown as soon as one field has
+                    // content, with placeholders on whatever's still blank.
+                    ->visible(fn (Environment $record): bool => filled($record->purpose)
+                        || filled($record->configuration_notes)
+                        || filled($record->known_issues)
+                        || filled($record->troubleshooting_notes)
+                        || filled($record->customer_procedures))
                     ->schema([
                         TextEntry::make('purpose')
                             ->placeholder('Not set')

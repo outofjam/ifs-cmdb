@@ -54,7 +54,7 @@ class EnvironmentForm
                     ->schema([
                         TextInput::make('ifs_release')
                             ->label('Release')
-                            ->helperText('E.g. 24R2 — from the environment\'s Solution Manager.')
+                            ->helperText('E.g. 24R2 -- from the environment\'s Solution Manager.')
                             ->placeholder('24R2'),
                         TextInput::make('build_number')
                             ->label('Build number')
@@ -64,6 +64,7 @@ class EnvironmentForm
                 Section::make('Environment knowledge')
                     ->description('Context for anyone picking this environment up cold -- what it\'s for, how it\'s configured, and what tends to go wrong.')
                     ->icon(Heroicon::OutlinedLightBulb)
+                    ->columnSpanFull()
                     ->schema([
                         Textarea::make('purpose')
                             ->helperText('Why this environment exists and what it\'s used for.')

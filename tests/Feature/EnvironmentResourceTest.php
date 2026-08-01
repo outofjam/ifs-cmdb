@@ -104,3 +104,36 @@ it('shows the environment knowledge fields on the view page', function () {
         ->assertSee('Restart the app server if login hangs.')
         ->assertSee('Customer requires a Slack heads-up before any refresh.');
 });
+
+it('hides the environment knowledge section when nothing has been recorded', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    $customer = Customer::factory()->for($organization)->create();
+    $environment = Environment::factory()->for($organization)->create([
+        'customer_id' => $customer->id,
+    ]);
+
+    Livewire::test(ViewEnvironment::class, ['record' => $environment->getRouteKey()])
+        ->assertSuccessful()
+        ->assertDontSee('Environment knowledge');
+});
+
+it('shows the environment knowledge section when only one field has been recorded', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    $customer = Customer::factory()->for($organization)->create();
+    $environment = Environment::factory()->for($organization)->create([
+        'customer_id' => $customer->id,
+        'purpose' => 'Used for regression testing before each release.',
+    ]);
+
+    Livewire::test(ViewEnvironment::class, ['record' => $environment->getRouteKey()])
+        ->assertSuccessful()
+        ->assertSee('Environment knowledge')
+        ->assertSee('Used for regression testing before each release.')
+        ->assertSee('None recorded');
+});
