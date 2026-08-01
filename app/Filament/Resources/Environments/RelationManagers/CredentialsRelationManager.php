@@ -307,6 +307,12 @@ class CredentialsRelationManager extends RelationManager
      * class docblock), so its audit trail is shown here instead: a row
      * action that opens a modal listing that credential's Audit records.
      */
+    /**
+     * A long-lived credential can accumulate audit entries indefinitely --
+     * capped rather than rendered as one unbounded, ever-growing list.
+     */
+    protected const MAX_AUDIT_HISTORY_ENTRIES = 20;
+
     public static function viewAuditHistoryAction(): Action
     {
         return Action::make('viewAuditHistory')
@@ -318,7 +324,10 @@ class CredentialsRelationManager extends RelationManager
             ->modalCancelActionLabel('Close')
             ->modalContent(fn (Credential $record): View => view(
                 'filament.credentials.audit-history',
-                ['audits' => static::presentableAudits($record)],
+                [
+                    'audits' => static::presentableAudits($record),
+                    'totalCount' => $record->audits()->count(),
+                ],
             ));
     }
 
@@ -329,13 +338,26 @@ class CredentialsRelationManager extends RelationManager
      * `filament-auditing.mapping` config the package's own Audits tabs
      * use (see App\Models\Concerns\FormatsAuditFieldsForPresentation).
      * Attached as an in-memory property on each Audit, never persisted.
+     * Capped to the most recent MAX_AUDIT_HISTORY_ENTRIES -- see that
+     * constant's docblock.
      *
      * @return Collection<int, Audit>
      */
     protected static function presentableAudits(Credential $record): Collection
     {
-        return $record->audits()->with('user')->latest()->get()->each(
-            function (Audit $audit) use ($record): void {
+        return $record->audits()
+            ->with('user')
+            // created_at alone isn't a reliable tiebreaker -- audits
+            // created in a tight loop (e.g. bulk updates) can share the
+            // same timestamp, and without a secondary sort LIMIT can
+            // return an indeterminate subset instead of the true most
+            // recent rows. `id` is an ordered UUID (HasUuids), so it
+            // sorts correctly even when timestamps tie.
+            ->latest()
+            ->orderByDesc('id')
+            ->limit(self::MAX_AUDIT_HISTORY_ENTRIES)
+            ->get()
+            ->each(function (Audit $audit) use ($record): void {
                 $audit->presentableFieldChanges = collect($audit->new_values ?? [])
                     ->map(function (mixed $newValue, string $field) use ($record, $audit): array {
                         [$label, $displayNew] = $record->resolveAuditFieldForDisplay($field, $newValue);
@@ -348,7 +370,6 @@ class CredentialsRelationManager extends RelationManager
                         ];
                     })
                     ->values();
-            }
-        );
+            });
     }
 }

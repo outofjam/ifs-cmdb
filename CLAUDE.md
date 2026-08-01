@@ -400,6 +400,21 @@ See docs/plan.md for complete spec.
   model here, not just `Credential`. If a future model needs a similar
   bookkeeping-field problem, add `$auditExclude` there too rather than
   touching `empty_values` again.
+- **The Credential audit-history modal is capped, not unbounded.**
+  Removing bookkeeping noise (above) only slows how fast the list grows --
+  a long-lived credential with real edits over months/years can still
+  accumulate more than fits on screen. `CredentialsRelationManager::presentableAudits()`
+  caps to the most recent `MAX_AUDIT_HISTORY_ENTRIES` (20), the modal shows
+  a "Showing the N most recent of M total" note when truncated, and the
+  list itself sits in a `max-h-[28rem] overflow-y-auto` container so even
+  a full 20 entries don't blow out the modal height. The query orders by
+  `created_at DESC, id DESC` -- **not `created_at` alone**: audits created
+  in a tight loop (bulk updates, or just a fast test) can share the same
+  timestamp, and `LIMIT` on a tied `ORDER BY` returns an indeterminate
+  subset, not necessarily the true most-recent rows. `id` is an ordered
+  UUID (`HasUuids`) so it sorts correctly even when timestamps tie -- this
+  bit a test in this exact file before the secondary sort was added; don't
+  drop it as a "simplification" later.
 - Reveal notification polished: the revealed secret value renders in a
   monospaced `<pre>` block instead of plain text, with a "Copy to
   clipboard" action next to it. That action must not use the default

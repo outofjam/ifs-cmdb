@@ -190,3 +190,36 @@ it('shows when a credential was last verified', function () {
         ->assertTableColumnExists('last_verified_at')
         ->assertSee('1 day ago');
 });
+
+it('caps the audit history modal instead of rendering an unbounded list', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    $customer = Customer::factory()->for($organization)->create();
+    $environment = Environment::factory()->for($organization)->create([
+        'customer_id' => $customer->id,
+        'type' => EnvironmentType::Uat,
+    ]);
+    $credential = Credential::factory()->for($organization)->create([
+        'environment_id' => $environment->id,
+        'name' => 'Original name',
+    ]);
+
+    // 1 "created" audit already exists from the factory. 25 more renames
+    // pushes well past any reasonable cap.
+    foreach (range(1, 25) as $i) {
+        $credential->update(['name' => "Renamed {$i}"]);
+    }
+
+    Livewire::test(CredentialsRelationManager::class, [
+        'ownerRecord' => $environment,
+        'pageClass' => ViewEnvironment::class,
+    ])
+        ->mountAction(TestAction::make('viewAuditHistory')->table($credential))
+        // Most recent change is shown...
+        ->assertMountedActionModalSee('Renamed 25')
+        // ...but the very first (oldest) rename has fallen off the cap.
+        ->assertMountedActionModalDontSee('Original name')
+        ->assertMountedActionModalSee('most recent');
+});
