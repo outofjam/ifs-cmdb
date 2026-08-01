@@ -411,25 +411,35 @@ See docs/plan.md for complete spec.
   model here, not just `Credential`. If a future model needs a similar
   bookkeeping-field problem, add `$auditExclude` there too rather than
   touching `empty_values` again.
-- **The Credential audit-history action is a slide-over, capped, not an
-  unbounded centered modal.** Removing bookkeeping noise (above) only
-  slows how fast the list grows -- a long-lived credential with real
-  edits over months/years can still accumulate more than fits on screen.
-  `viewAuditHistoryAction()` uses `->slideOver()` -- it consumes the full
-  browser height and scrolls natively (`max-h-[calc(100dvh-2rem)]
-  overflow-y-auto` built into Filament's own modal container), so the
-  view has **no custom max-height/overflow wrapper of its own** -- don't
-  re-add one, it'd just double up on Filament's. `presentableAudits()`
-  still caps to the most recent `MAX_AUDIT_HISTORY_ENTRIES` (20) regardless
-  of container, for query cost and DOM size, not just visual height; the
-  view shows a "Showing the N most recent of M total" note when truncated.
-  The query orders by `created_at DESC, id DESC` -- **not `created_at`
-  alone**: audits created in a tight loop (bulk updates, or just a fast
-  test) can share the same timestamp, and `LIMIT` on a tied `ORDER BY`
-  returns an indeterminate subset, not necessarily the true most-recent
-  rows. `id` is an ordered UUID (`HasUuids`) so it sorts correctly even
-  when timestamps tie -- this bit a test in this exact file before the
-  secondary sort was added; don't drop it as a "simplification" later.
+- **The Credential audit-history action embeds a real Filament table, not
+  a hand-rolled card list.** An earlier version rendered plain Blade HTML
+  (a `space-y-4` stack of `<div>`s) inside the action's slide-over --
+  functional, but no sorting, no searching, no real pagination (just a
+  hard cap with a "showing N of M" note). Replaced with
+  `App\Livewire\CredentialAuditHistoryTable`: a standalone Livewire
+  component (`implements HasActions, HasSchemas, HasTable`, the pattern
+  for embedding a Filament table outside a Resource/RelationManager)
+  mounted via `@livewire('credential-audit-history-table', ['credential' =>
+  $credential], key(...))` from `viewAuditHistoryAction()`'s
+  `->modalContent()`. It exists as its own top-level Livewire component,
+  not another RelationManager, because Credential has no resource page to
+  nest a *second* relation manager under, and Filament doesn't support
+  nesting one relation manager inside another's row action.
+  `->slideOver()` is kept (full browser height, scrolls natively) but the
+  view no longer needs any custom max-height/overflow wrapper -- Filament's
+  own table pagination replaces the old hard cap entirely, so there's
+  nothing left to truncate. `->defaultSort('created_at', 'desc')` is
+  paired with `->defaultKeySort()` -- **not a hand-rolled `orderByDesc('id')`**:
+  audits created in a tight loop (bulk updates, or a fast test) can share
+  the same `created_at`, and `defaultKeySort()` is Filament's own built-in
+  fix (appends the model's primary key, here an ordered UUID via
+  `HasUuids`, as a secondary tiebreaker) -- this exact bug already bit an
+  earlier version of this feature, don't drop the secondary sort as a
+  "simplification" later. The "Changes" column reuses
+  `Credential::resolveAuditFieldForDisplay()` (same UUID-to-name
+  resolution as everywhere else) via `TextColumn::state(Closure)` +
+  `->html()`, not `AuditValuesColumn` -- see the note above on why that
+  package column silently drops `formatStateUsing()`.
 - Reveal notification polished: the revealed secret value renders in a
   monospaced `<pre>` block instead of plain text, with a "Copy to
   clipboard" action next to it. That action must not use the default

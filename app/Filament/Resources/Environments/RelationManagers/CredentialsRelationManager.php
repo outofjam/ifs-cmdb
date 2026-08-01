@@ -6,7 +6,6 @@ use App\Enums\EnvironmentType;
 use App\Enums\SecretProvider;
 use App\Exceptions\SecretNotFoundException;
 use App\Exceptions\SecretRetrievalFailedException;
-use App\Models\Audit;
 use App\Models\AuditEvent;
 use App\Models\Credential;
 use App\Services\SecretProviderRetrieverResolver;
@@ -32,9 +31,7 @@ use Filament\Tables\Table;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Js;
-use Illuminate\Support\Str;
 
 /**
  * Credentials nested under their Environment's view page, rather than a
@@ -302,19 +299,14 @@ class CredentialsRelationManager extends RelationManager
     }
 
     /**
-     * A long-lived credential can accumulate audit entries indefinitely --
-     * capped rather than rendered as one unbounded, ever-growing list.
-     */
-    protected const MAX_AUDIT_HISTORY_ENTRIES = 20;
-
-    /**
      * Credential has no resource page of its own to hang the package's
      * AuditsRelationManager off of (it's nested under Environment, see the
      * class docblock), so its audit trail is shown here instead: a row
-     * action that opens a slide-over listing that credential's Audit
-     * records. Slide-over rather than a centered modal since it consumes
-     * the full browser height and scrolls natively -- no custom
-     * max-height/overflow wrapper needed in the view.
+     * action that opens a slide-over embedding
+     * App\Livewire\CredentialAuditHistoryTable -- a real, searchable/
+     * sortable/paginated Filament table, not a hand-rolled card list.
+     * Slide-over rather than a centered modal since it consumes the full
+     * browser height and scrolls natively.
      */
     public static function viewAuditHistoryAction(): Action
     {
@@ -328,52 +320,7 @@ class CredentialsRelationManager extends RelationManager
             ->modalCancelActionLabel('Close')
             ->modalContent(fn (Credential $record): View => view(
                 'filament.credentials.audit-history',
-                [
-                    'audits' => static::presentableAudits($record),
-                    'totalCount' => $record->audits()->count(),
-                ],
+                ['credential' => $record],
             ));
-    }
-
-    /**
-     * Resolves each audit's changed fields into display-ready
-     * [label, old, new] triples -- foreign keys like owner_id are
-     * resolved to the related record's name via the same
-     * `filament-auditing.mapping` config the package's own Audits tabs
-     * use (see App\Models\Concerns\FormatsAuditFieldsForPresentation).
-     * Attached as an in-memory property on each Audit, never persisted.
-     * Capped to the most recent MAX_AUDIT_HISTORY_ENTRIES -- see that
-     * constant's docblock.
-     *
-     * @return Collection<int, Audit>
-     */
-    protected static function presentableAudits(Credential $record): Collection
-    {
-        return $record->audits()
-            ->with('user')
-            // created_at alone isn't a reliable tiebreaker -- audits
-            // created in a tight loop (e.g. bulk updates) can share the
-            // same timestamp, and without a secondary sort LIMIT can
-            // return an indeterminate subset instead of the true most
-            // recent rows. `id` is an ordered UUID (HasUuids), so it
-            // sorts correctly even when timestamps tie.
-            ->latest()
-            ->orderByDesc('id')
-            ->limit(self::MAX_AUDIT_HISTORY_ENTRIES)
-            ->get()
-            ->each(function (Audit $audit) use ($record): void {
-                $audit->presentableFieldChanges = collect($audit->new_values ?? [])
-                    ->map(function (mixed $newValue, string $field) use ($record, $audit): array {
-                        [$label, $displayNew] = $record->resolveAuditFieldForDisplay($field, $newValue);
-                        $oldValue = $audit->old_values[$field] ?? null;
-
-                        return [
-                            'label' => Str::headline($label),
-                            'old' => filled($oldValue) ? $record->resolveAuditFieldForDisplay($field, $oldValue)[1] : null,
-                            'new' => $displayNew,
-                        ];
-                    })
-                    ->values();
-            });
     }
 }
