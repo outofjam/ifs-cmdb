@@ -302,23 +302,27 @@ class CredentialsRelationManager extends RelationManager
     }
 
     /**
-     * Credential has no resource page of its own to hang the package's
-     * AuditsRelationManager off of (it's nested under Environment, see the
-     * class docblock), so its audit trail is shown here instead: a row
-     * action that opens a modal listing that credential's Audit records.
-     */
-    /**
      * A long-lived credential can accumulate audit entries indefinitely --
      * capped rather than rendered as one unbounded, ever-growing list.
      */
     protected const MAX_AUDIT_HISTORY_ENTRIES = 20;
 
+    /**
+     * Credential has no resource page of its own to hang the package's
+     * AuditsRelationManager off of (it's nested under Environment, see the
+     * class docblock), so its audit trail is shown here instead: a row
+     * action that opens a slide-over listing that credential's Audit
+     * records. Slide-over rather than a centered modal since it consumes
+     * the full browser height and scrolls natively -- no custom
+     * max-height/overflow wrapper needed in the view.
+     */
     public static function viewAuditHistoryAction(): Action
     {
         return Action::make('viewAuditHistory')
             ->label('Audit history')
             ->icon(Heroicon::OutlinedClock)
             ->color('gray')
+            ->slideOver()
             ->modalHeading(fn (Credential $record): string => "Audit history: {$record->name}")
             ->modalSubmitAction(false)
             ->modalCancelActionLabel('Close')

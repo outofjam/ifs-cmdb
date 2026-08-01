@@ -4,7 +4,7 @@
             Showing the {{ $audits->count() }} most recent changes of {{ $totalCount }} total.
         </p>
     @endif
-    <div class="max-h-[28rem] space-y-4 overflow-y-auto pr-1">
+    <div class="space-y-4">
     @forelse ($audits as $audit)
         <div class="rounded-lg border border-gray-200 p-4 dark:border-white/10">
             <div class="flex items-center justify-between gap-2">
