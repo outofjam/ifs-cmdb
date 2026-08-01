@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Environments\Schemas;
 
 use App\Models\Environment;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -84,6 +85,15 @@ class EnvironmentInfolist
                             ->label('Customer-specific procedures')
                             ->placeholder('Not set')
                             ->columnSpanFull(),
+                    ]),
+                Section::make('Version history')
+                    ->description('Releases, builds, and other changes over this environment\'s lifetime.')
+                    ->icon(Heroicon::OutlinedArrowTrendingUp)
+                    ->columnSpanFull()
+                    ->schema([
+                        ViewEntry::make('lifecycleTimeline')
+                            ->hiddenLabel()
+                            ->view('filament.environments.lifecycle-timeline'),
                     ]),
             ]);
     }

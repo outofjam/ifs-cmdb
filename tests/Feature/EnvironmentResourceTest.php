@@ -156,3 +156,24 @@ it('shows the number of credentials belonging to each environment', function () 
     Livewire::test(ListEnvironments::class)
         ->assertTableColumnStateSet('credentials_count', 2, record: $environment);
 });
+
+it('shows a version history timeline on the view page', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    $customer = Customer::factory()->for($organization)->create();
+    $environment = Environment::factory()->for($organization)->create([
+        'customer_id' => $customer->id,
+        'type' => EnvironmentType::Uat,
+        'ifs_release' => '24R1',
+    ]);
+    $environment->update(['ifs_release' => '24R2']);
+
+    Livewire::test(ViewEnvironment::class, ['record' => $environment->getRouteKey()])
+        ->assertSuccessful()
+        ->assertSee('Version history')
+        ->assertSee('Upgraded')
+        ->assertSee('24R1 → 24R2')
+        ->assertSee('Created');
+});

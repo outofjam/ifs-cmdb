@@ -479,6 +479,20 @@ See docs/plan.md for complete spec.
   above for the `platform` auth guard details. `organization_id` staying
   required on every `User` (including platform owners) was a deliberate
   scope cut, not an oversight.
+- Environment Lifecycle Management complete (docs/plan.md §12), scoped to
+  what's actually derivable: that section names six event types (creation,
+  refresh, clone, upgrade, deployment, configuration change), but a
+  refresh/clone/deployment doesn't change any field on `Environment` --
+  nothing in the audit trail could ever signal one happened, and no manual
+  logging UI was built for them either (deliberate scope cut, not
+  forgotten). `Environment::lifecycleTimeline()` categorizes the existing
+  audit trail into `created`, `upgraded` (`ifs_release` or `build_number`
+  changed -- a release change wins the label if both changed in the same
+  save), and `configuration_changed` (everything else), newest first.
+  Rendered as a vertical timeline (`resources/views/filament/environments/lifecycle-timeline.blade.php`)
+  in a new "Version history" Infolist section, via `ViewEntry::make(...)->view(...)`
+  -- `$record` is automatically available in the Blade view for this
+  component type, no `viewData()` needed.
 
 ## TDD — Non-Negotiable Workflow
 
