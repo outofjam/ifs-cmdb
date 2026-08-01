@@ -357,6 +357,30 @@ See docs/plan.md for complete spec.
   The package's own standalone global `AuditResource` (a top-level "browse
   every audit" nav item) was deliberately not registered -- kept scoped to
   per-screen tabs.
+- **Audit old/new values now show related record names, not raw UUIDs.**
+  tapp/filament-auditing's `mapping` config (and the `formatAuditFieldsForPresentation`
+  model hook it falls through to) look like the documented way to do this,
+  but on the installed version (`^4.0`, v4.0.9) they're silently dead for
+  the actual rendered table: `AuditValuesColumn`'s own Blade view reads
+  `$getState()` directly and never calls `formatState()`, so whatever
+  `formatStateUsing()` computes is discarded -- confirmed by temporarily
+  patching the vendor closure to return a hardcoded sentinel string and
+  observing it never appeared in the rendered HTML. Don't "fix" this by
+  going back to the `mapping` config alone; it will look correct in a unit
+  test that calls the hook directly and still show UUIDs on the actual
+  page. Fixed with `App\Filament\RelationManagers\AuditsRelationManager`,
+  which subclasses the package's version and overrides only `table()`,
+  swapping `AuditValuesColumn` for a plain `TextColumn` (whose Blade view
+  *does* call `formatState()` correctly) -- wired into `CustomerResource`/
+  `EnvironmentResource` in place of the package's own class.
+  `App\Models\Concerns\FormatsAuditFieldsForPresentation` (on `Customer`,
+  `Environment`, `Credential`) is the actual resolution logic, still keyed
+  off the same `filament-auditing.mapping` config as the single source of
+  truth for which fields point at which related model -- add a new
+  provider/relationship there, not per-model. Its `resolveAuditFieldForDisplay()`
+  method is also reused directly by `CredentialsRelationManager::presentableAudits()`
+  for the hand-rolled Credential audit-history modal (a separate rendering
+  path from the package entirely, so it needed the same fix independently).
 - Reveal notification polished: the revealed secret value renders in a
   monospaced `<pre>` block instead of plain text, with a "Copy to
   clipboard" action next to it. That action must not use the default

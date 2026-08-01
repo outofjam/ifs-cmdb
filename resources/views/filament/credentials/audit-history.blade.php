@@ -20,13 +20,13 @@
                 </span>
             </div>
 
-            @if ($audit->event === 'updated' && filled($audit->new_values))
+            @if ($audit->event === 'updated' && filled($audit->presentableFieldChanges))
                 <dl class="mt-3 space-y-1 text-sm">
-                    @foreach ($audit->new_values as $field => $newValue)
+                    @foreach ($audit->presentableFieldChanges as $change)
                         <div class="flex flex-wrap items-baseline gap-x-2">
-                            <dt class="font-medium text-gray-700 dark:text-gray-300">{{ \Illuminate\Support\Str::headline($field) }}:</dt>
-                            <dd class="text-gray-500 line-through dark:text-gray-400">{{ $audit->old_values[$field] ?? '—' }}</dd>
-                            <dd class="text-gray-950 dark:text-white">{{ $newValue }}</dd>
+                            <dt class="font-medium text-gray-700 dark:text-gray-300">{{ $change['label'] }}:</dt>
+                            <dd class="text-gray-500 line-through dark:text-gray-400">{{ $change['old'] ?? 'Not set' }}</dd>
+                            <dd class="text-gray-950 dark:text-white">{{ $change['new'] }}</dd>
                         </div>
                     @endforeach
                 </dl>

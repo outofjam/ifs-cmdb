@@ -8,6 +8,7 @@ use App\Enums\VerificationStatus;
 use App\Exceptions\CredentialTargetsProductionEnvironmentException;
 use App\Models\Concerns\BelongsToAuditableOrganization;
 use App\Models\Concerns\BelongsToOrganization;
+use App\Models\Concerns\FormatsAuditFieldsForPresentation;
 use App\Models\Scopes\OrganizationScope;
 use Database\Factories\CredentialFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -32,7 +33,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 class Credential extends Model implements AuditableContract
 {
     /** @use HasFactory<CredentialFactory> */
-    use Auditable, BelongsToAuditableOrganization, BelongsToOrganization, HasFactory, HasUuids {
+    use Auditable, BelongsToAuditableOrganization, BelongsToOrganization, FormatsAuditFieldsForPresentation, HasFactory, HasUuids {
         BelongsToAuditableOrganization::transformAudit insteadof Auditable;
     }
 

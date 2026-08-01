@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToAuditableOrganization;
 use App\Models\Concerns\BelongsToOrganization;
+use App\Models\Concerns\FormatsAuditFieldsForPresentation;
 use Database\Factories\CustomerFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +25,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 class Customer extends Model implements AuditableContract
 {
     /** @use HasFactory<CustomerFactory> */
-    use Auditable, BelongsToAuditableOrganization, BelongsToOrganization, HasFactory, HasUuids {
+    use Auditable, BelongsToAuditableOrganization, BelongsToOrganization, FormatsAuditFieldsForPresentation, HasFactory, HasUuids {
         BelongsToAuditableOrganization::transformAudit insteadof Auditable;
     }
 

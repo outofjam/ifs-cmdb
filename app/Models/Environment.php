@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\EnvironmentType;
 use App\Models\Concerns\BelongsToAuditableOrganization;
 use App\Models\Concerns\BelongsToOrganization;
+use App\Models\Concerns\FormatsAuditFieldsForPresentation;
 use Database\Factories\EnvironmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,7 +27,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 class Environment extends Model implements AuditableContract
 {
     /** @use HasFactory<EnvironmentFactory> */
-    use Auditable, BelongsToAuditableOrganization, BelongsToOrganization, HasFactory, HasUuids {
+    use Auditable, BelongsToAuditableOrganization, BelongsToOrganization, FormatsAuditFieldsForPresentation, HasFactory, HasUuids {
         BelongsToAuditableOrganization::transformAudit insteadof Auditable;
     }
 

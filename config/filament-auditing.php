@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Customer;
+use App\Models\Environment;
 use App\Models\User;
 use Tapp\FilamentAuditing\Filament\Resources\Audits\AuditResource;
 
@@ -42,6 +44,26 @@ return [
             'model' => User::class,
             'field' => 'name',
             'label' => 'User',
+        ],
+        'owner_id' => [
+            'model' => User::class,
+            'field' => 'name',
+            'label' => 'Owner',
+        ],
+        'last_retrieved_by' => [
+            'model' => User::class,
+            'field' => 'name',
+            'label' => 'Last retrieved by',
+        ],
+        'customer_id' => [
+            'model' => Customer::class,
+            'field' => 'name',
+            'label' => 'Customer',
+        ],
+        'environment_id' => [
+            'model' => Environment::class,
+            'field' => 'name',
+            'label' => 'Environment',
         ],
     ],
 

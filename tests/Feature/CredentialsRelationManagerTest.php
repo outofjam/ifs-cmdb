@@ -142,3 +142,28 @@ it('shows a credential\'s audit history through a row action modal', function ()
         ->assertMountedActionModalSee('Renamed credential')
         ->assertMountedActionModalSee('Original name');
 });
+
+it('shows the new owner\'s name instead of a raw UUID in the audit history modal', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->for($organization)->create();
+    $this->actingAs($user);
+
+    $customer = Customer::factory()->for($organization)->create();
+    $environment = Environment::factory()->for($organization)->create([
+        'customer_id' => $customer->id,
+        'type' => EnvironmentType::Uat,
+    ]);
+    $owner = User::factory()->for($organization)->create(['name' => 'Ada Lovelace']);
+    $credential = Credential::factory()->for($organization)->create([
+        'environment_id' => $environment->id,
+    ]);
+    $credential->update(['owner_id' => $owner->id]);
+
+    Livewire::test(CredentialsRelationManager::class, [
+        'ownerRecord' => $environment,
+        'pageClass' => ViewEnvironment::class,
+    ])
+        ->mountAction(TestAction::make('viewAuditHistory')->table($credential))
+        ->assertMountedActionModalSee('Ada Lovelace')
+        ->assertMountedActionModalDontSee($owner->id);
+});

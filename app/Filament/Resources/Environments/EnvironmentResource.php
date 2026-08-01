@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Environments;
 
+use App\Filament\RelationManagers\AuditsRelationManager;
 use App\Filament\Resources\Environments\Pages\CreateEnvironment;
 use App\Filament\Resources\Environments\Pages\EditEnvironment;
 use App\Filament\Resources\Environments\Pages\ListEnvironments;
@@ -16,7 +17,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
 
 class EnvironmentResource extends Resource
 {
