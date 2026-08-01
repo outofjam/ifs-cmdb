@@ -404,6 +404,17 @@ See docs/plan.md for complete spec.
 - Org-admin user management UI complete -- see "Organization Onboarding"
   above for `App\Filament\Resources\Users\UserResource` details. Closes the
   backlog item where role changes required a direct DB edit.
+- Customer now has an `EnvironmentsRelationManager`
+  (`App\Filament\Resources\Customers\RelationManagers`): full CRUD (create/
+  edit/delete/view) on that customer's environments from the customer's own
+  page, not just the top-level Environments list. Deliberately does *not*
+  reuse `EnvironmentForm`/`EnvironmentInfolist` -- those include a
+  `customer_id` picker, which would be redundant here (the customer is
+  already the page context) and risks a mismatch between what's picked in
+  the form and what the `environments` relationship actually sets on
+  create. The relation manager's own form/infolist mirror those classes'
+  other sections (General information, Application metadata, Environment
+  knowledge) with that one field removed instead.
 
 ## TDD — Non-Negotiable Workflow
 
