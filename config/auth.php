@@ -42,6 +42,17 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Dedicated guard for the /platform panel (see PlatformPanelProvider
+        // ->authGuard('platform')) so logging into /platform doesn't also
+        // authenticate a user's own org on /admin. Session-driver guards
+        // namespace their login state by guard name even within the same
+        // session, so this alone is enough to give each panel its own
+        // login boundary without a separate session store/cookie.
+        'platform' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
     ],
 
     /*

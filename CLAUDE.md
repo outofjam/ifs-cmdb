@@ -262,14 +262,25 @@ and full task-by-task detail.
 Not the same as `OrganizationRole::PlatformAdministrator`, which is scoped to
 one org (an org's own admin).
 
-**Known backlog item — not isolated yet:** the platform owner is currently
+**Platform panel login boundary is isolated:** `/platform` uses its own
+`platform` auth guard (`config/auth.php`, set via `->authGuard('platform')`
+on `PlatformPanelProvider`) instead of sharing `/admin`'s default `web`
+guard. Logging into one no longer authenticates the other. A
+session-driver guard namespaces its login state by guard name even within
+the *same* session (`login_{guard}_{hash}`), so this didn't require a
+separate session store/cookie -- just a second guard entry reusing the
+same `users` provider (the custom `scope-bypassing-eloquent` driver,
+registered in `AppServiceProvider`, applies to both guards equally, since
+it's keyed by provider name not guard name).
+
+**Still backlog, deliberately not done:** the platform owner is still
 *also* a regular member of an org (every `User` row needs an
-`organization_id`), and both panels share the same `web` auth guard/session.
-Logging into `/platform` therefore also authenticates `/admin` for that
-user's own org, with no separate login boundary. Platform admin should not
-be an org admin — fix direction: a dedicated auth guard for the `platform`
-panel (its own session), and likely decoupling the platform-owner concept
-from needing an `organization_id` at all. Not built — backlog, not urgent.
+`organization_id`) -- decoupling the platform-owner concept from needing
+one at all (nullable `organization_id`, a provisioning path for org-less
+platform owners) was scoped out when this was built, since it touches the
+NOT NULL constraint, registration/provisioning flows, and every test that
+assumes a user has an org. Revisit only if actually needed -- it's a
+design-purity concern, not the security bug the auth guard fixed.
 
 **Org-admin user management UI is built** (`App\Filament\Resources\Users\UserResource`):
 a `PlatformAdministrator` can see every user in their own organization and
@@ -464,6 +475,10 @@ See docs/plan.md for complete spec.
   Filament's `->counts('relation')` on a `TextColumn::make('{relation}_count')`.
   Credentials table also now shows `last_verified_at` (`->since()`,
   already tracked by `verifyAction()`, just wasn't displayed before).
+- Platform panel login boundary isolated -- see "Organization Onboarding"
+  above for the `platform` auth guard details. `organization_id` staying
+  required on every `User` (including platform owners) was a deliberate
+  scope cut, not an oversight.
 
 ## TDD — Non-Negotiable Workflow
 

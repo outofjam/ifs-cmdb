@@ -814,26 +814,29 @@ The consulting team can:
 * Understand their delivery landscape
 
 
-## Known Gap: platform owner not isolated from org admin
-The platform owner shares the same auth guard/session as the org-scoped
-`/admin` panel and must currently belong to an `Organization` (`User.organization_id`
-is `NOT NULL`), making the platform owner incidentally an org member too.
-Logging into `/platform` also authenticates `/admin` for that user's own org
-— no separate login boundary. Should be isolated: platform admin won't be
-an org admin. Backlog — see CLAUDE.md "Organization Onboarding" for the fix
-direction (dedicated auth guard for the platform panel, decouple the
-platform-owner concept from needing an org at all).
+## Resolved: platform panel login boundary
+The platform panel now uses its own `platform` auth guard instead of
+sharing `/admin`'s default `web` guard -- logging into one no longer
+authenticates the other. See CLAUDE.md "Organization Onboarding" for
+details.
 
-## Known Gap: no org-admin user management UI
-Team members provisioned via Microsoft/Entra login always start as
-`OrganizationRole::Viewer` (`App\Actions\Auth\ProvisionUserFromEntra`) — by
-design, so a new Microsoft sign-in never grants org-admin access on its own
-(covered by `tests/Unit/ProvisionUserFromEntraTest.php` and
-`tests/Feature/EntraSettingsTest.php`). But there's currently no UI for an
-org admin to see who's in their org or promote a Viewer/Consultant/Delivery
-Manager to `PlatformAdministrator` — role changes require a direct DB edit.
-Needed: a Filament resource (org-scoped, admin-only) listing the org's users
-with a role field editable by existing admins. Backlog — not built yet.
+## Known Gap (deliberately deferred): platform owner still requires an org
+The platform owner must still belong to an `Organization` (`User.organization_id`
+is `NOT NULL`), making the platform owner incidentally an org member too.
+This is a design-purity question, not a security bug (that part is the
+resolved login-boundary gap above) -- decoupling it would touch the NOT
+NULL constraint, registration/provisioning flows, and every test that
+assumes a user has an org. Scoped out when the login boundary was fixed;
+revisit only if actually needed.
+
+## Resolved: org-admin user management UI
+Team members provisioned via Microsoft/Entra login still always start as
+`OrganizationRole::Viewer` (`App\Actions\Auth\ProvisionUserFromEntra`) --
+by design, so a new Microsoft sign-in never grants org-admin access on its
+own. `App\Filament\Resources\Users\UserResource` now lets an existing
+`PlatformAdministrator` see who's in their org and promote a Viewer/
+Consultant/Delivery Manager -- see CLAUDE.md "Organization Onboarding" for
+details.
 
 ## Known Gap (Phase 2 prerequisite): revenue gate on org creation
 Org creation is currently fully open (self-serve signup, no approval step) —

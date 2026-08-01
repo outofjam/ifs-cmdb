@@ -26,6 +26,10 @@ class PlatformPanelProvider extends PanelProvider
         return $panel
             ->id('platform')
             ->path('platform')
+            // Own login boundary, separate from /admin's default 'web'
+            // guard -- see config/auth.php's 'platform' guard comment and
+            // CLAUDE.md "Organization Onboarding" for why this matters.
+            ->authGuard('platform')
             ->login()
             ->colors([
                 'primary' => Color::Amber,
