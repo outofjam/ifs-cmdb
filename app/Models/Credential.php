@@ -38,6 +38,22 @@ class Credential extends Model implements AuditableContract
     }
 
     /**
+     * Pure bookkeeping fields, bumped on every Verify/Reveal click --
+     * already captured by the dedicated AuditEvent security log on Reveal
+     * (see CredentialsRelationManager::revealAction()). Without this, the
+     * general Audit trail logs every single click as a near-content-free
+     * "Updated" entry, drowning out changes that actually matter (name,
+     * secret_reference, purpose, etc.). verification_status is
+     * deliberately NOT excluded -- a Verified/NotFound/Failed flip is a
+     * real, audit-worthy state change, just not the timestamp next to it.
+     */
+    protected $auditExclude = [
+        'last_verified_at',
+        'last_retrieved_at',
+        'last_retrieved_by',
+    ];
+
+    /**
      * Rejects saving a Credential against a Production environment,
      * regardless of how it was reached (form, API, tinker).
      */

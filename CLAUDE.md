@@ -381,6 +381,25 @@ See docs/plan.md for complete spec.
   method is also reused directly by `CredentialsRelationManager::presentableAudits()`
   for the hand-rolled Credential audit-history modal (a separate rendering
   path from the package entirely, so it needed the same fix independently).
+- **`Credential` excludes bookkeeping fields from its general audit trail**
+  (`$auditExclude = ['last_verified_at', 'last_retrieved_at', 'last_retrieved_by']`).
+  Every Verify/Reveal click updates one or more of these, and without the
+  exclusion the general `Audit` trail logged every single click as a
+  near-content-free "Updated" entry, drowning out changes that actually
+  matter (name, secret_reference, purpose, etc.) -- this is already
+  captured separately by the dedicated `AuditEvent` security log on Reveal
+  (see "Credential Access Auditing" above; don't conflate the two).
+  `verification_status` is deliberately *not* excluded -- a Verified/
+  NotFound/Failed flip is a real, audit-worthy state change, just not the
+  timestamp next to it. Paired with `config/audit.php`'s `empty_values`
+  set to `false` (was the package's published default of `true`) so that
+  an update touching *only* excluded fields (e.g. Reveal, which touches
+  nothing else) creates no `Audit` row at all rather than an empty one --
+  this is a global auditing setting, not per-model, but "don't store an
+  audit with nothing in it" is the right default for every auditable
+  model here, not just `Credential`. If a future model needs a similar
+  bookkeeping-field problem, add `$auditExclude` there too rather than
+  touching `empty_values` again.
 - Reveal notification polished: the revealed secret value renders in a
   monospaced `<pre>` block instead of plain text, with a "Copy to
   clipboard" action next to it. That action must not use the default
